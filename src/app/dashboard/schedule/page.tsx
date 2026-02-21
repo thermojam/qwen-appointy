@@ -159,7 +159,10 @@ export default function SchedulePage() {
       />
 
       {/* Main Content */}
-      <main className="ml-64 p-8">
+      <main className={cn(
+        'p-8 transition-all duration-300 ease-in-out',
+        'ml-20 md:ml-20 lg:ml-64'
+      )}>
         {/* Header */}
         <div className="mb-8">
           <h1 className="font-heading text-3xl font-bold mb-2">Расписание</h1>

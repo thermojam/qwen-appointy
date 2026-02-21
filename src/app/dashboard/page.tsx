@@ -19,6 +19,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
 } from 'lucide-react';
+import { cn } from '@/shared/lib/utils';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -142,7 +143,10 @@ export default function DashboardPage() {
       />
 
       {/* Main Content */}
-      <main className="ml-64 p-8">
+      <main className={cn(
+        'p-4 md:p-8 transition-all duration-300 ease-in-out',
+        'ml-20 md:ml-20 lg:ml-64'
+      )}>
         {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="font-heading text-3xl font-bold mb-2">

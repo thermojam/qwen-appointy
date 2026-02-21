@@ -8,6 +8,7 @@ import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card';
 import { useRouter } from 'next/navigation';
+import { cn } from '@/shared/lib/utils';
 
 export default function ServicesPage() {
   const router = useRouter();
@@ -69,7 +70,10 @@ export default function ServicesPage() {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      <main className={cn(
+        'p-8 transition-all duration-300 ease-in-out',
+        'ml-20 md:ml-20 lg:ml-64'
+      )}>
         {/* Create Service Form */}
         {isCreating && (
           <Card className="mb-8">
