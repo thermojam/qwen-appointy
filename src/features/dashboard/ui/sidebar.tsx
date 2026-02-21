@@ -132,7 +132,7 @@ export function Sidebar({ user, onLogout }: SidebarProps) {
                 'flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors',
                 isCollapsed ? 'justify-center px-2' : '',
                 isActive
-                  ? 'bg-[#F1F5F9] text-foreground'
+                  ? 'bg-primary/10 text-primary'
                   : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
               )}
               title={isCollapsed ? item.label : undefined}
