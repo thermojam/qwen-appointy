@@ -1,0 +1,318 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ====================================================
+// USER & AUTH
+// ====================================================
+
+enum UserRole {
+  MASTER
+  CLIENT
+  ADMIN
+}
+
+enum AccountStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  phone     String?  @unique
+  password  String
+  role      UserRole @default(CLIENT)
+  status    AccountStatus @default(PENDING)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  master  Master?
+  client  Client?
+  
+  refreshTokens RefreshToken[]
+  notifications Notification[]
+  
+  @@index([email])
+  @@index([role])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([token])
+}
+
+// ====================================================
+// MASTER PROFILE
+// ====================================================
+
+enum WorkFormat {
+  ONLINE
+  OFFLINE
+  BOTH
+}
+
+model Master {
+  id                          String    @id @default(uuid())
+  userId                      String    @unique
+  avatarUrl                   String?
+  fullName                    String
+  description                 String?
+  workFormat                  WorkFormat @default(BOTH)
+  address                     String?
+  latitude                    Float?
+  longitude                   Float?
+  experienceYears             Int       @default(0)
+  rating                      Float     @default(0)
+  totalReviews                Int       @default(0)
+  
+  // Booking settings
+  bookingConfirmationRequired Boolean   @default(true)
+  minCancellationTime         Int       @default(24) // hours
+  maxBookingLeadTime          Int       @default(30) // days
+  
+  // Status
+  isVerified                  Boolean   @default(false)
+  isActive                    Boolean   @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  services   Service[]
+  schedule   Schedule[]
+  appointments Appointment[] @relation("MasterAppointments")
+  portfolio  PortfolioWork[]
+  reviews    Review[]
+  favorites  FavoriteMaster[]
+
+  @@index([userId])
+  @@index([workFormat])
+  @@index([rating])
+  @@index([isActive])
+}
+
+// ====================================================
+// CLIENT PROFILE
+// ====================================================
+
+model Client {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  avatarUrl String?
+  fullName  String
+  interests String[] // Array of interest tags
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appointments Appointment[] @relation("ClientAppointments")
+  favorites  FavoriteMaster[]
+  reviews    Review[]
+
+  @@index([userId])
+}
+
+// ====================================================
+// SERVICES
+// ====================================================
+
+model Service {
+  id          String   @id @default(uuid())
+  masterId    String
+  name        String
+  description String?
+  duration    Int      // minutes
+  price       Decimal  @db.Decimal(10, 2)
+  isActive    Boolean  @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  master      Master      @relation(fields: [masterId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+  
+  @@index([masterId])
+  @@index([isActive])
+}
+
+// ====================================================
+// SCHEDULE & AVAILABILITY
+// ====================================================
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+model Schedule {
+  id         String    @id @default(uuid())
+  masterId   String
+  dayOfWeek  DayOfWeek
+  startTime  String    // HH:MM format
+  endTime    String    // HH:MM format
+  breakStart String?   // HH:MM format
+  breakEnd   String?   // HH:MM format
+  isActive   Boolean   @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  master Master @relation(fields: [masterId], references: [id], onDelete: Cascade)
+  
+  @@index([masterId])
+  @@index([dayOfWeek])
+}
+
+// ====================================================
+// APPOINTMENTS
+// ====================================================
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+model Appointment {
+  id        String            @id @default(uuid())
+  masterId  String
+  clientId  String
+  serviceId String
+  dateTime  DateTime
+  status    AppointmentStatus @default(PENDING)
+  comment   String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  master  Master  @relation(fields: [masterId], references: [id], onDelete: Restrict, name: "MasterAppointments")
+  client  Client  @relation(fields: [clientId], references: [id], onDelete: Restrict, name: "ClientAppointments")
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+
+  @@index([masterId])
+  @@index([clientId])
+  @@index([dateTime])
+  @@index([status])
+}
+
+// ====================================================
+// REVIEWS
+// ====================================================
+
+model Review {
+  id        String   @id @default(uuid())
+  masterId  String
+  clientId  String
+  rating    Int      // 1-5
+  comment   String?
+  createdAt DateTime @default(now())
+  
+  // Relations
+  master Master @relation(fields: [masterId], references: [id], onDelete: Cascade)
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  
+  @@unique([masterId, clientId]) // One review per client per master
+  @@index([masterId])
+  @@index([rating])
+}
+
+// ====================================================
+// FAVORITES
+// ====================================================
+
+model FavoriteMaster {
+  id        String   @id @default(uuid())
+  masterId  String
+  clientId  String
+  createdAt DateTime @default(now())
+  
+  // Relations
+  master Master @relation(fields: [masterId], references: [id], onDelete: Cascade)
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  
+  @@unique([masterId, clientId])
+  @@index([masterId])
+  @@index([clientId])
+}
+
+// ====================================================
+// PORTFOLIO
+// ====================================================
+
+model PortfolioWork {
+  id          String   @id @default(uuid())
+  masterId    String
+  imageUrl    String
+  title       String?
+  description String?
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  master Master @relation(fields: [masterId], references: [id], onDelete: Cascade)
+  
+  @@index([masterId])
+}
+
+// ====================================================
+// NOTIFICATIONS
+// ====================================================
+
+enum NotificationType {
+  APPOINTMENT_CREATED
+  APPOINTMENT_CONFIRMED
+  APPOINTMENT_CANCELLED
+  APPOINTMENT_REMINDER
+  REVIEW_RECEIVED
+  SYSTEM
+}
+
+model Notification {
+  id        String            @id @default(uuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  isRead    Boolean           @default(false)
+  createdAt DateTime          @default(now())
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([isRead])
+  @@index([type])
+}
