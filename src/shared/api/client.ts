@@ -222,6 +222,11 @@ export const api = {
       request<Appointment>(`/appointments/client/${id}/cancel`, {
         method: 'POST',
       }),
+    createAppointment: (data: CreateAppointmentInput) =>
+      request<Appointment>('/appointments/client', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
   },
 
   // Schedule
@@ -379,6 +384,34 @@ export const api = {
       request<{ message: string }>(`/portfolio/${id}`, {
         method: 'DELETE',
       }),
+  },
+
+  // Favorites
+  favorites: {
+    getAll: () =>
+      request<Array<{
+        id: string;
+        masterId: string;
+        clientId: string;
+        createdAt: string;
+        master: import('@/shared/types/api').MasterProfile;
+      }>>('/favorites'),
+    add: (masterId: string) =>
+      request<{
+        id: string;
+        masterId: string;
+        clientId: string;
+        createdAt: string;
+      }>('/favorites', {
+        method: 'POST',
+        body: JSON.stringify({ masterId }),
+      }),
+    remove: (masterId: string) =>
+      request<{ message: string }>(`/favorites/${masterId}`, {
+        method: 'DELETE',
+      }),
+    check: (masterId: string) =>
+      request<{ isFavorite: boolean }>(`/favorites/check/${masterId}`),
   },
 
   // Dashboard

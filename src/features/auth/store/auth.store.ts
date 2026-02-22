@@ -2,12 +2,15 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import type { User } from '@/shared/types/api';
 
 interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
+  user: User | null;
 
   setTokens: (accessToken: string, refreshToken: string) => void;
+  setUser: (user: User) => void;
   clearTokens: () => void;
   restoreFromStorage: () => void;
 }
@@ -17,13 +20,26 @@ export const useAuthStore = create<AuthState>()(
     (set, get) => ({
       accessToken: null,
       refreshToken: null,
+      user: null,
 
       setTokens: (accessToken, refreshToken) => {
         set({ accessToken, refreshToken });
         // Синхронизируем с localStorage сразу
         if (typeof window !== 'undefined') {
           localStorage.setItem('auth-tokens', JSON.stringify({
-            state: { accessToken, refreshToken },
+            state: { accessToken, refreshToken, user: get().user },
+            version: 0,
+          }));
+        }
+      },
+
+      setUser: (user) => {
+        set({ user });
+        if (typeof window !== 'undefined') {
+          const stored = localStorage.getItem('auth-tokens');
+          const parsed = stored ? JSON.parse(stored) : { state: {} };
+          localStorage.setItem('auth-tokens', JSON.stringify({
+            state: { ...parsed.state, user },
             version: 0,
           }));
         }
@@ -33,6 +49,7 @@ export const useAuthStore = create<AuthState>()(
         set({
           accessToken: null,
           refreshToken: null,
+          user: null,
         });
         if (typeof window !== 'undefined') {
           localStorage.removeItem('auth-tokens');
@@ -48,6 +65,7 @@ export const useAuthStore = create<AuthState>()(
               set({
                 accessToken: parsed.state?.accessToken || null,
                 refreshToken: parsed.state?.refreshToken || null,
+                user: parsed.state?.user || null,
               });
             }
           } catch (error) {

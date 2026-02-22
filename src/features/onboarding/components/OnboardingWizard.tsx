@@ -76,10 +76,11 @@ export function OnboardingWizard() {
   // Client mutation
   const completeClient = useMutation({
     mutationFn: async () => {
+      // Не отправляем avatarUrl, если он пустой или содержит base64 (для MVP)
+      const { avatarUrl, ...rest } = client;
       return api.onboarding.completeClient({
-        fullName: client.fullName,
-        avatarUrl: client.avatarUrl || undefined,
-        interests: client.interests,
+        fullName: rest.fullName,
+        interests: rest.interests,
       });
     },
     onSuccess: () => {

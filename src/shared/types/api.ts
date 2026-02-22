@@ -265,3 +265,29 @@ export interface Notification {
   isRead: boolean;
   createdAt: string;
 }
+
+// Favorites
+export interface FavoriteMaster {
+  id: string;
+  masterId: string;
+  clientId: string;
+  createdAt: string;
+  master?: MasterProfile;
+}
+
+// Dashboard Stats
+export interface DashboardStats {
+  todayAppointments: number;
+  todayRevenue: number;
+  totalAppointments: number;
+  pendingAppointments: number;
+  confirmedAppointments: number;
+  totalClients: number;
+  totalReviews: number;
+  averageRating: number;
+}
+
+// Master Profile with extended info for search
+export interface MasterProfileWithServices extends MasterProfile {
+  services: Service[];
+}

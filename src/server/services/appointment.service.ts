@@ -6,7 +6,7 @@ interface CreateAppointmentInput {
   masterId: string;
   clientId: string;
   serviceId: string;
-  dateTime: Date;
+  dateTime: Date | string;
   comment?: string;
 }
 
@@ -49,11 +49,16 @@ export const appointmentService = {
       throw AppError.notFound('Client not found');
     }
 
+    // Convert dateTime to Date if it's a string
+    const dateTime = typeof data.dateTime === 'string' 
+      ? new Date(data.dateTime) 
+      : data.dateTime;
+
     // Check for existing appointments at this time (collision detection)
     const existingAppointment = await prisma.appointment.findFirst({
       where: {
         masterId: data.masterId,
-        dateTime: data.dateTime,
+        dateTime: dateTime,
         status: {
           in: ['PENDING', 'CONFIRMED'],
         },
@@ -74,7 +79,7 @@ export const appointmentService = {
         masterId: data.masterId,
         clientId: data.clientId,
         serviceId: data.serviceId,
-        dateTime: data.dateTime,
+        dateTime: dateTime,
         status: initialStatus,
         comment: data.comment,
       },

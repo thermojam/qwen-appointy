@@ -1,39 +1,82 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
-import { api } from '@/shared/api/client';
-import type { Service, Review, Schedule, PortfolioWork } from '@/shared/types/api';
 import { useParams, useRouter } from 'next/navigation';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { api } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card';
-import { MapPin, Star, Clock, Calendar } from 'lucide-react';
+import { Avatar } from '@/shared/ui/avatar';
+import { Badge } from '@/shared/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/ui/card';
+import { Star, MapPin, Clock, Calendar, ChevronLeft, Briefcase } from 'lucide-react';
+import { useState } from 'react';
+import { BookingWizard, type BookingData } from '@/shared/ui/booking-wizard';
+import { DateTimePicker } from '@/shared/ui/date-time-picker';
+import { useAuthStore } from '@/features/auth/store/auth.store';
 
 export default function MasterProfilePage() {
   const params = useParams();
   const router = useRouter();
   const masterId = params.id as string;
+  const { user } = useAuthStore();
+
+  const [showBooking, setShowBooking] = useState(false);
+  const [selectedService, setSelectedService] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedTime, setSelectedTime] = useState<string | null>(null);
 
   const { data: master, isLoading } = useQuery({
     queryKey: ['master', masterId],
     queryFn: () => api.search.masterById(masterId),
+    enabled: !!masterId,
   });
+
+  // Fetch available slots when date is selected
+  const { data: availableSlots } = useQuery({
+    queryKey: ['slots', masterId, selectedDate, selectedService],
+    queryFn: async () => {
+      if (!selectedDate || !selectedService) return [];
+      const service = master?.services?.find(s => s.id === selectedService);
+      if (!service) return [];
+      
+      const dateStr = selectedDate.toISOString().split('T')[0];
+      return api.schedule.getAvailableSlots(masterId, dateStr, service.duration);
+    },
+    enabled: !!selectedDate && !!selectedService,
+  });
+
+  const createAppointment = useMutation({
+    mutationFn: (data: BookingData) => api.appointments.createAppointment(data),
+    onSuccess: () => {
+      setShowBooking(false);
+      // Show success message or redirect
+    },
+  });
+
+  const handleBookingSubmit = (data: BookingData) => {
+    createAppointment.mutate(data);
+  };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Загрузка...</p>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4" />
+          <p className="text-muted-foreground">Загрузка профиля...</p>
+        </div>
       </div>
     );
   }
 
   if (!master) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <Card>
-          <CardContent className="p-6">
-            <p className="text-center text-muted-foreground">Мастер не найден</p>
-            <Button className="mt-4" onClick={() => router.push('/search')}>
-              К поиску
+          <CardContent className="py-16 text-center">
+            <h2 className="font-heading font-semibold text-lg mb-2">
+              Мастер не найден
+            </h2>
+            <Button onClick={() => router.push('/search')} variant="outline">
+              Вернуться к поиску
             </Button>
           </CardContent>
         </Card>
@@ -41,230 +84,202 @@ export default function MasterProfilePage() {
     );
   }
 
+  const formatWorkFormat = (format: string) => {
+    switch (format) {
+      case 'ONLINE':
+        return 'Онлайн';
+      case 'OFFLINE':
+        return 'Офлайн';
+      case 'BOTH':
+        return 'Онлайн и офлайн';
+      default:
+        return format;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Button variant="ghost" onClick={() => router.push('/search')}>
-            ← Назад к поиску
+      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto px-4 py-4">
+          <Button
+            variant="ghost"
+            onClick={() => router.back()}
+            className="gap-2"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Назад
           </Button>
-          <Button>Записаться</Button>
         </div>
       </header>
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Main Info */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Profile Header */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-start gap-6">
-                  {master.avatarUrl ? (
-                    <img
-                      src={master.avatarUrl}
-                      alt={master.fullName}
-                      className="w-32 h-32 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-32 h-32 rounded-full bg-primary/10 flex items-center justify-center text-4xl text-primary font-bold">
-                      {master.fullName[0]}
-                    </div>
-                  )}
-                  <div className="flex-1">
-                    <h1 className="font-heading text-3xl font-bold mb-2">
+        {/* Master Header */}
+        <Card className="mb-8">
+          <CardContent className="pt-6">
+            <div className="flex flex-col md:flex-row gap-6">
+              <Avatar
+                src={master.avatarUrl}
+                alt={master.fullName}
+                fallback={master.fullName.charAt(0)}
+                size="xl"
+              />
+              <div className="flex-1">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h1 className="font-heading text-3xl font-bold">
                       {master.fullName}
                     </h1>
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="flex items-center gap-1">
-                        <Star className="w-5 h-5 fill-warning text-warning" />
-                        <span className="font-semibold text-lg">
-                          {master.rating.toFixed(1)}
-                        </span>
-                        <span className="text-muted-foreground">
-                          ({master.totalReviews} отзывов)
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-4 mt-2 text-muted-foreground">
                       <div className="flex items-center gap-1">
                         <MapPin className="w-4 h-4" />
-                        {master.workFormat === 'ONLINE' && 'Онлайн'}
-                        {master.workFormat === 'OFFLINE' && 'Офлайн'}
-                        {master.workFormat === 'BOTH' && 'Онлайн и офлайн'}
+                        <span>{formatWorkFormat(master.workFormat)}</span>
                       </div>
+                      {master.address && (
+                        <div className="flex items-center gap-1">
+                          <Briefcase className="w-4 h-4" />
+                          <span>{master.address}</span>
+                        </div>
+                      )}
                       {master.experienceYears > 0 && (
                         <div className="flex items-center gap-1">
                           <Clock className="w-4 h-4" />
-                          {master.experienceYears} лет опыта
+                          <span>{master.experienceYears} лет опыта</span>
                         </div>
                       )}
                     </div>
                   </div>
+                  <div className="flex items-center gap-2 bg-warning-background px-4 py-2 rounded-full">
+                    <Star className="w-5 h-5 fill-warning text-warning" />
+                    <span className="font-bold text-lg">{master.rating.toFixed(1)}</span>
+                    <span className="text-sm text-muted-foreground">
+                      ({master.totalReviews} отзывов)
+                    </span>
+                  </div>
                 </div>
-              </CardHeader>
-              <CardContent>
+
                 {master.description && (
-                  <div>
-                    <h3 className="font-heading font-semibold mb-2">О мастере</h3>
-                    <p className="text-muted-foreground">{master.description}</p>
-                  </div>
+                  <p className="mt-4 text-muted-foreground">
+                    {master.description}
+                  </p>
                 )}
-              </CardContent>
-            </Card>
 
-            {/* Services */}
-            {master.services && master.services.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Услуги</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {master.services.map((service: Service) => (
-                      <div
-                        key={service.id}
-                        className="flex justify-between items-center py-3 border-b last:border-0"
-                      >
-                        <div>
-                          <h4 className="font-semibold">{service.name}</h4>
-                          {service.description && (
-                            <p className="text-sm text-muted-foreground">
-                              {service.description}
-                            </p>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <p className="font-bold text-lg">{service.price} ₽</p>
-                          <p className="text-sm text-muted-foreground">
-                            {service.duration} мин
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                {/* Badges */}
+                <div className="flex flex-wrap gap-2 mt-4">
+                  <Badge variant={master.isVerified ? 'success' : 'secondary'}>
+                    {master.isVerified ? '✓ Проверен' : 'Мастер'}
+                  </Badge>
+                  <Badge variant="outline">
+                    {master.services?.length || 0} услуг
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-            {/* Reviews */}
-            {master.reviews && master.reviews.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Отзывы</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {master.reviews && master.reviews.map((review: Review) => (
-                      <div key={review.id} className="border-b pb-4 last:border-0">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center font-semibold text-sm">
-                            {review.client?.fullName?.[0] || '?'}
-                          </div>
-                          <div>
-                            <p className="font-medium text-sm">
-                              {review.client?.fullName || 'Аноним'}
-                            </p>
-                            <div className="flex items-center gap-1">
-                              {[...Array(5)].map((_, i) => (
-                                <Star
-                                  key={i}
-                                  className={`w-3 h-3 ${
-                                    i < review.rating
-                                      ? 'fill-warning text-warning'
-                                      : 'text-muted-foreground'
-                                  }`}
-                                />
-                              ))}
-                            </div>
-                          </div>
-                          <span className="text-xs text-muted-foreground ml-auto">
-                            {new Date(review.createdAt).toLocaleDateString('ru-RU')}
-                          </span>
-                        </div>
-                        {review.comment && (
-                          <p className="text-sm text-muted-foreground">
-                            {review.comment}
-                          </p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Schedule */}
-            {master.schedule && master.schedule.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Calendar className="w-5 h-5" />
-                    График работы
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2 text-sm">
-                    {master.schedule && master.schedule.map((slot: Schedule) => (
-                      <div key={slot.id} className="flex justify-between">
-                        <span className="text-muted-foreground">
-                          {slot.dayOfWeek.toLowerCase().replace('_', ' ')}
-                        </span>
-                        <span className="font-medium">
-                          {slot.startTime} - {slot.endTime}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Portfolio */}
-            {master.portfolio && master.portfolio.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Портфолио</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-2">
-                    {master.portfolio && master.portfolio.slice(0, 4).map((work: PortfolioWork) => (
-                      <img
-                        key={work.id}
-                        src={work.imageUrl}
-                        alt={work.title || 'Portfolio work'}
-                        className="w-full aspect-square object-cover rounded-lg"
-                      />
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Booking CTA */}
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Services */}
+          <div className="lg:col-span-2">
             <Card>
               <CardHeader>
-                <CardTitle>Записаться</CardTitle>
+                <CardTitle>Услуги</CardTitle>
                 <CardDescription>
-                  Выберите услугу и удобное время
+                  Выберите услугу для записи
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button className="w-full" size="lg">
-                  Выбрать время
-                </Button>
-                <p className="text-xs text-center text-muted-foreground mt-2">
-                  {master.bookingConfirmationRequired
-                    ? 'Запись требует подтверждения'
-                    : 'Мгновенное подтверждение'}
-                </p>
+                {master.services && master.services.length > 0 ? (
+                  <div className="space-y-3">
+                    {master.services
+                      .filter((s) => s.isActive)
+                      .map((service) => (
+                        <div
+                          key={service.id}
+                          className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all ${
+                            selectedService === service.id
+                              ? 'border-primary bg-primary/5'
+                              : 'border-border hover:border-primary/50'
+                          }`}
+                          onClick={() => setSelectedService(service.id)}
+                        >
+                          <div className="flex-1">
+                            <h4 className="font-semibold">{service.name}</h4>
+                            {service.description && (
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {service.description}
+                              </p>
+                            )}
+                            <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {service.duration} мин
+                              </span>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-heading font-bold text-lg">
+                              {Number(service.price).toLocaleString('ru-RU')} ₽
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-center py-8">
+                    Услуги пока не добавлены
+                  </p>
+                )}
               </CardContent>
             </Card>
+          </div>
+
+          {/* Booking Sidebar */}
+          <div>
+            {showBooking && master.services ? (
+              <BookingWizard
+                masterId={master.id}
+                masterName={master.fullName}
+                services={master.services}
+                availableSlots={availableSlots || []}
+                onSubmit={handleBookingSubmit}
+                onCancel={() => setShowBooking(false)}
+              />
+            ) : (
+              <Card className="sticky top-24">
+                <CardHeader>
+                  <CardTitle>Запись</CardTitle>
+                  <CardDescription>
+                    Выберите услугу и запишитесь
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {selectedService ? (
+                    <div className="space-y-4">
+                      <div className="text-sm">
+                        <span className="text-muted-foreground">Выбрано:</span>
+                        <p className="font-medium mt-1">
+                          {master.services?.find((s) => s.id === selectedService)?.name}
+                        </p>
+                      </div>
+                      <Button 
+                        className="w-full" 
+                        size="lg"
+                        onClick={() => setShowBooking(true)}
+                      >
+                        <Calendar className="w-4 h-4 mr-2" />
+                        Выбрать дату и время
+                      </Button>
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground text-center py-4">
+                      Выберите услугу для продолжения
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </main>

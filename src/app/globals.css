@@ -3,43 +3,46 @@
 :root {
   /* Design Tokens from Figma - RGB format */
   --background: 255 255 255;
-  --foreground: 26 26 26;
+  --foreground: 0 0 0;
 
-  /* Primary Colors - #7C3AED */
-  --primary: 124 58 237;
+  /* Primary Colors - Black from Figma */
+  --primary: 0 0 0;
   --primary-foreground: 255 255 255;
 
-  /* Secondary Colors - #F1F5F9 */
-  --secondary: 241 245 249;
-  --secondary-foreground: 30 41 59;
+  /* Secondary Colors - #f5f5f5 from Figma */
+  --secondary: 245 245 245;
+  --secondary-foreground: 0 0 0;
 
-  /* Surface Colors - #F8FAFC */
-  --surface: 248 250 252;
-  --surface-foreground: 30 41 59;
+  /* Surface Colors */
+  --surface: 245 245 245;
+  --surface-foreground: 0 0 0;
 
-  /* Muted */
+  /* Muted - #757575 from Figma */
   --muted: 241 245 249;
-  --muted-foreground: 100 116 139;
+  --muted-foreground: 117 117 117;
 
   /* Accent */
   --accent: 224 231 255;
   --accent-foreground: 55 48 163;
 
-  /* Border - #E2E8F0 */
-  --border: 226 232 240;
-  --input: 226 232 240;
-  --ring: 124 58 237;
+  /* Border - #e6e6e6 from Figma */
+  --border: 230 230 230;
+  --input: 217 217 217;
+  --ring: 0 0 0;
 
-  /* Status Colors */
-  --success: 16 185 129;
+  /* Status Colors from Figma */
+  --success: 0 153 81;
   --success-foreground: 255 255 255;
-  --error: 239 68 68;
+  --success-background: 235 255 238;
+  --error: 236 34 31;
   --error-foreground: 255 255 255;
-  --warning: 245 158 11;
+  --error-background: 254 233 231;
+  --warning: 191 106 2;
   --warning-foreground: 255 255 255;
+  --warning-background: 255 241 194;
   --info: 59 130 246;
   --info-foreground: 255 255 255;
-  --destructive: 239 68 68;
+  --destructive: 236 34 31;
   --destructive-foreground: 255 255 255;
 
   /* Typography */
@@ -47,7 +50,7 @@
   --font-body: var(--font-body);
   --font-mono: var(--font-mono);
 
-  /* Component Measurements */
+  /* Component Measurements from Figma */
   --button-height: 52px;
   --button-radius: 16px;
   --card-radius: 40px;
@@ -90,31 +93,37 @@
   --radius-button: var(--button-radius);
   --radius-card: var(--card-radius);
   --radius-input: var(--input-radius);
+
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.06);
 }
 
 /* Dark mode */
 .dark {
   --background: 30 30 30;
-  --foreground: 241 245 249;
+  --foreground: 255 255 255;
 
-  --primary: 139 92 246;
-  --primary-foreground: 30 27 75;
+  --primary: 255 255 255;
+  --primary-foreground: 0 0 0;
 
-  --secondary: 30 41 59;
-  --secondary-foreground: 241 245 249;
+  --secondary: 44 44 44;
+  --secondary-foreground: 255 255 255;
 
-  --surface: 30 41 59;
-  --surface-foreground: 241 245 249;
+  --surface: 44 44 44;
+  --surface-foreground: 255 255 255;
 
-  --muted: 30 41 59;
-  --muted-foreground: 148 163 184;
+  --muted: 51 51 51;
+  --muted-foreground: 179 179 179;
 
   --accent: 49 46 129;
   --accent-foreground: 224 231 255;
 
-  --border: 51 65 85;
-  --input: 51 65 85;
-  --ring: 139 92 246;
+  --border: 51 51 51;
+  --input: 51 51 51;
+  --ring: 255 255 255;
+
+  --success-background: 20 50 40;
+  --error-background: 50 20 20;
+  --warning-background: 50 40 20;
 
   color-scheme: dark;
 }
@@ -141,14 +150,35 @@ code, pre, kbd {
   max-width: 1280px;
 }
 
-/* Card Hover Effect */
+/* Card Hover Effect - from Figma */
 .card-hover {
   transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
 
 .card-hover:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 24px rgba(124, 58, 237, 0.15);
+  box-shadow: var(--shadow-card);
+}
+
+/* Shadow utilities from Figma */
+.shadow-sm {
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.shadow-md {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.shadow-lg {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.shadow-xl {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.shadow-card {
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
 }
 
 /* Scrollbar styling */

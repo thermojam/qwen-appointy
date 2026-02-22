@@ -246,4 +246,35 @@ router.post(
   })
 );
 
+// Create new appointment (client)
+const createAppointmentSchema = z.object({
+  masterId: z.string().uuid(),
+  serviceId: z.string().uuid(),
+  dateTime: z.string().datetime(),
+  comment: z.string().optional(),
+});
+
+router.post(
+  '/client',
+  authorize(UserRole.CLIENT),
+  asyncHandler(async (req, res) => {
+    const client = await prisma.client.findUnique({
+      where: { userId: req.user!.userId },
+    });
+
+    if (!client) {
+      throw AppError.notFound('Client profile not found');
+    }
+
+    const data = createAppointmentSchema.parse(req.body);
+
+    const appointment = await appointmentService.createAppointment({
+      ...data,
+      clientId: client.id,
+    });
+
+    successResponse(res, appointment);
+  })
+);
+
 export default router;
