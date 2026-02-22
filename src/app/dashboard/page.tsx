@@ -165,8 +165,8 @@ export default function DashboardPage() {
               <Card key={index} className="card-hover rounded-3xl border-border/50">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between mb-4">
-                    <div className="w-12 h-12 rounded-2xl bg-[#F1F5F9] flex items-center justify-center">
-                      <Icon className="w-6 h-6 text-muted-foreground" />
+                    <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+                      <Icon className="w-6 h-6 text-primary" />
                     </div>
                     <div
                       className={`flex items-center gap-1 text-sm font-medium ${
@@ -202,8 +202,8 @@ export default function DashboardPage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#F1F5F9] flex items-center justify-center">
-                    <Clock className="w-5 h-5 text-muted-foreground" />
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <Clock className="w-5 h-5 text-primary" />
                   </div>
                   <div>
                     <h2 className="font-heading text-xl font-bold">
@@ -271,8 +271,8 @@ export default function DashboardPage() {
           <Card className="rounded-3xl">
             <CardContent className="p-6">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-[#F1F5F9] flex items-center justify-center">
-                  <TrendingUp className="w-5 h-5 text-muted-foreground" />
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 text-primary" />
                 </div>
                 <div>
                   <h2 className="font-heading text-xl font-bold">
@@ -287,7 +287,7 @@ export default function DashboardPage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-3 rounded-xl bg-secondary/50">
                   <div className="flex items-center gap-3">
-                    <Clock className="w-5 h-5 text-muted-foreground" />
+                    <Clock className="w-5 h-5 text-primary" />
                     <span className="text-sm font-medium">Ожидают</span>
                   </div>
                   <span className="font-semibold">{stats?.pendingAppointments || 0}</span>
@@ -295,7 +295,7 @@ export default function DashboardPage() {
 
                 <div className="flex items-center justify-between p-3 rounded-xl bg-secondary/50">
                   <div className="flex items-center gap-3">
-                    <CheckCircle className="w-5 h-5 text-muted-foreground" />
+                    <CheckCircle className="w-5 h-5 text-primary" />
                     <span className="text-sm font-medium">Подтверждено</span>
                   </div>
                   <span className="font-semibold">{stats?.confirmedAppointments || 0}</span>
@@ -303,7 +303,7 @@ export default function DashboardPage() {
 
                 <div className="flex items-center justify-between p-3 rounded-xl bg-secondary/50">
                   <div className="flex items-center gap-3">
-                    <Star className="w-5 h-5 text-muted-foreground" />
+                    <Star className="w-5 h-5 text-primary" />
                     <span className="text-sm font-medium">Отзывов</span>
                   </div>
                   <span className="font-semibold">{stats?.totalReviews || 0}</span>
@@ -311,7 +311,7 @@ export default function DashboardPage() {
 
                 <div className="flex items-center justify-between p-3 rounded-xl bg-secondary/50">
                   <div className="flex items-center gap-3">
-                    <DollarSign className="w-5 h-5 text-muted-foreground" />
+                    <DollarSign className="w-5 h-5 text-primary" />
                     <span className="text-sm font-medium">Всего записей</span>
                   </div>
                   <span className="font-semibold">{stats?.totalAppointments || 0}</span>

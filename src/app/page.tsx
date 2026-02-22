@@ -13,8 +13,8 @@ interface FeatureCardProps {
 
 function FeatureCard({ title, description, features }: FeatureCardProps) {
   return (
-    <div className="relative drop-shadow-xl w-full h-64 overflow-hidden rounded-xl">
-      <div className="absolute flex flex-col items-start justify-center z-[1] rounded-xl inset-[2px] p-6 bg-[#FAFAFA] dark:bg-[#252525]">
+    <div className="relative drop-shadow-xl w-full h-64 overflow-hidden rounded-[40px]">
+      <div className="absolute flex flex-col items-start justify-center z-[1] rounded-[40px] inset-[2px] p-6 bg-background">
         <h3 className="font-heading text-xl font-bold mb-1 text-foreground">{title}</h3>
         <p className="text-sm text-muted-foreground mb-4">{description}</p>
         <ul className="space-y-2 text-sm">
