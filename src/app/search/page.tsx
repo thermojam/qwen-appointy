@@ -12,7 +12,7 @@ import { Badge } from '@/shared/ui/badge';
 import { MasterCard } from '@/shared/ui/master-card';
 import { Card, CardContent } from '@/shared/ui/card';
 import { useRouter } from 'next/navigation';
-import { MapPin, Star, Clock, Filter, SlidersHorizontal } from 'lucide-react';
+import { MapPin, Star, Clock, Filter, SlidersHorizontal, ChevronLeft } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
 
 export default function SearchPage() {
@@ -30,10 +30,17 @@ export default function SearchPage() {
 
   const [showFilters, setShowFilters] = useState(false);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['masters', filters],
     queryFn: () => api.search.masters(filters),
+    enabled: true, // Всегда загружать при монтировании
+    staleTime: 1000 * 60, // 1 минута
   });
+
+  // Логирование для отладки
+  console.log('[Search] Data:', data);
+  console.log('[Search] Error:', error);
+  console.log('[Search] Filters:', filters);
 
   const handleSearch = (query: string) => {
     setFilters({ ...filters, query, page: 1 });
@@ -70,7 +77,8 @@ export default function SearchPage() {
                 Найдите лучшего мастера для себя
               </p>
             </div>
-            <Button variant="outline" onClick={() => router.push('/dashboard')}>
+            <Button variant="outline" onClick={() => router.back()}>
+              <ChevronLeft className="w-4 h-4 mr-2" />
               Назад
             </Button>
           </div>

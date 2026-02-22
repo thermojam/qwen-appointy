@@ -8,13 +8,13 @@
     "dev:web": "next dev",
     "build": "next build",
     "start": "next start",
-    "start:server": "ts-node src/server/server.ts",
+    "start:server": "tsx src/server/server.ts",
     "lint": "eslint",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
-    "db:seed": "ts-node prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "6.19.2",

@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { api } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
 import { Avatar } from '@/shared/ui/avatar';
@@ -9,52 +9,19 @@ import { Badge } from '@/shared/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/ui/card';
 import { Star, MapPin, Clock, Calendar, ChevronLeft, Briefcase } from 'lucide-react';
 import { useState } from 'react';
-import { BookingWizard, type BookingData } from '@/shared/ui/booking-wizard';
-import { DateTimePicker } from '@/shared/ui/date-time-picker';
-import { useAuthStore } from '@/features/auth/store/auth.store';
 
 export default function MasterProfilePage() {
   const params = useParams();
   const router = useRouter();
   const masterId = params.id as string;
-  const { user } = useAuthStore();
 
-  const [showBooking, setShowBooking] = useState(false);
   const [selectedService, setSelectedService] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [selectedTime, setSelectedTime] = useState<string | null>(null);
 
   const { data: master, isLoading } = useQuery({
     queryKey: ['master', masterId],
     queryFn: () => api.search.masterById(masterId),
     enabled: !!masterId,
   });
-
-  // Fetch available slots when date is selected
-  const { data: availableSlots } = useQuery({
-    queryKey: ['slots', masterId, selectedDate, selectedService],
-    queryFn: async () => {
-      if (!selectedDate || !selectedService) return [];
-      const service = master?.services?.find(s => s.id === selectedService);
-      if (!service) return [];
-      
-      const dateStr = selectedDate.toISOString().split('T')[0];
-      return api.schedule.getAvailableSlots(masterId, dateStr, service.duration);
-    },
-    enabled: !!selectedDate && !!selectedService,
-  });
-
-  const createAppointment = useMutation({
-    mutationFn: (data: BookingData) => api.appointments.createAppointment(data),
-    onSuccess: () => {
-      setShowBooking(false);
-      // Show success message or redirect
-    },
-  });
-
-  const handleBookingSubmit = (data: BookingData) => {
-    createAppointment.mutate(data);
-  };
 
   if (isLoading) {
     return (
@@ -237,49 +204,38 @@ export default function MasterProfilePage() {
 
           {/* Booking Sidebar */}
           <div>
-            {showBooking && master.services ? (
-              <BookingWizard
-                masterId={master.id}
-                masterName={master.fullName}
-                services={master.services}
-                availableSlots={availableSlots || []}
-                onSubmit={handleBookingSubmit}
-                onCancel={() => setShowBooking(false)}
-              />
-            ) : (
-              <Card className="sticky top-24">
-                <CardHeader>
-                  <CardTitle>Запись</CardTitle>
-                  <CardDescription>
-                    Выберите услугу и запишитесь
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {selectedService ? (
-                    <div className="space-y-4">
-                      <div className="text-sm">
-                        <span className="text-muted-foreground">Выбрано:</span>
-                        <p className="font-medium mt-1">
-                          {master.services?.find((s) => s.id === selectedService)?.name}
-                        </p>
-                      </div>
-                      <Button 
-                        className="w-full" 
-                        size="lg"
-                        onClick={() => setShowBooking(true)}
-                      >
-                        <Calendar className="w-4 h-4 mr-2" />
-                        Выбрать дату и время
-                      </Button>
+            <Card className="sticky top-24">
+              <CardHeader>
+                <CardTitle>Запись</CardTitle>
+                <CardDescription>
+                  Выберите услугу и запишитесь
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {selectedService ? (
+                  <div className="space-y-4">
+                    <div className="text-sm">
+                      <span className="text-muted-foreground">Выбрано:</span>
+                      <p className="font-medium mt-1">
+                        {master.services?.find((s) => s.id === selectedService)?.name}
+                      </p>
                     </div>
-                  ) : (
-                    <p className="text-muted-foreground text-center py-4">
-                      Выберите услугу для продолжения
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            )}
+                    <Button
+                      className="w-full"
+                      size="lg"
+                      onClick={() => router.push(`/book/${master.id}/${selectedService}`)}
+                    >
+                      <Calendar className="w-4 h-4 mr-2" />
+                      Записаться
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-center py-4">
+                    Выберите услугу для продолжения
+                  </p>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
       </main>

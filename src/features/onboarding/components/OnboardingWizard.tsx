@@ -36,7 +36,11 @@ const CLIENT_STEP_LABELS = [
   'Проверка',
 ];
 
-export function OnboardingWizard() {
+export interface OnboardingWizardProps {
+  role?: 'MASTER' | 'CLIENT';
+}
+
+export function OnboardingWizard({ role }: OnboardingWizardProps) {
   const router = useRouter();
   const { data: user } = useCurrentUser();
   const { currentStep, setCurrentStep, master, client, updateMasterData, updateClientData, resetOnboarding } =
@@ -44,8 +48,9 @@ export function OnboardingWizard() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Определяем роль из пользователя
-  const isMaster = user?.role === 'MASTER';
+  // Определяем роль из prop или из пользователя
+  const userRole = role || user?.role;
+  const isMaster = userRole === 'MASTER';
   const totalSteps = isMaster ? 6 : 3;
 
   // Master mutation

@@ -79,10 +79,12 @@ export function useRegister() {
       queryClient.fetchQuery({
         queryKey: AUTH_KEYS.user,
         queryFn: () => api.auth.me(),
+      }).then((user) => {
+        // Сохраняем user и редиректим на правильный онбординг
+        setTokens(tokens.accessToken, tokens.refreshToken, user);
+        const role = user.role.toLowerCase();
+        router.push(`/onboarding/${role}`);
       });
-
-      // Всегда редирект на онбординг после регистрации
-      router.push('/onboarding');
     },
   });
 }
@@ -110,14 +112,19 @@ export function useLogin() {
           queryFn: () => api.auth.me(),
         })
         .then((user) => {
+          // Сохраняем user с токенами
+          setTokens(tokens.accessToken, tokens.refreshToken, user);
+          
           // Определяем редирект по наличию профиля
           const hasProfile = user.role === 'MASTER' ? user.master : user.client;
 
           if (!hasProfile) {
-            router.push('/onboarding');
+            const role = user.role.toLowerCase();
+            router.push(`/onboarding/${role}`);
           } else if (user.role === 'MASTER') {
             router.push('/dashboard');
           } else {
+            // CLIENT role
             router.push('/');
           }
         })
@@ -154,7 +161,7 @@ export function useLogout() {
       queryClient.invalidateQueries({ queryKey: AUTH_KEYS.all });
 
       // Редирект на страницу входа
-      router.push('/auth/login');
+      router.push('/sign-in');
     },
   });
 }

@@ -169,7 +169,16 @@ export const api = {
   // Search
   search: {
     masters: (params?: SearchMastersParams) => {
-      const queryString = new URLSearchParams(params as Record<string, string>).toString();
+      // Фильтруем undefined значения перед созданием query string
+      const filteredParams: Record<string, string> = {};
+      if (params) {
+        Object.entries(params).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            filteredParams[key] = String(value);
+          }
+        });
+      }
+      const queryString = new URLSearchParams(filteredParams).toString();
       return request<SearchResults<MasterProfile>>(
         `/search/masters${queryString ? `?${queryString}` : ''}`
       );

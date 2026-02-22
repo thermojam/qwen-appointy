@@ -3,7 +3,6 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/features/auth/hooks/auth.hooks';
-import { OnboardingWizard } from '@/features/onboarding/components/OnboardingWizard';
 import { Card, CardContent } from '@/shared/ui/card';
 import { Button } from '@/shared/ui/button';
 import type { User } from '@/shared/types/api';
@@ -12,22 +11,28 @@ export default function OnboardingPage() {
   const router = useRouter();
   const { user, isLoading, isAuthenticated } = useAuth();
 
-  // Проверяем, был ли уже пройден онбординг
+  // Редирект на правильный онбординг по роли
   useEffect(() => {
-    if (!user) return;
+    if (!isLoading && user) {
+      const typedUser = user as User;
+      
+      // Проверяем, был ли уже пройден онбординг
+      const hasProfile = typedUser.role === 'MASTER' ? typedUser.master : typedUser.client;
 
-    const typedUser = user as User;
-    const hasProfile = typedUser.role === 'MASTER' ? typedUser.master : typedUser.client;
-
-    if (hasProfile) {
-      // Профиль уже заполнен - редирект
-      if (typedUser.role === 'MASTER') {
-        router.push('/dashboard');
+      if (hasProfile) {
+        // Профиль уже заполнен - редирект в дашборд
+        if (typedUser.role === 'MASTER') {
+          router.push('/dashboard');
+        } else {
+          router.push('/');
+        }
       } else {
-        router.push('/');
+        // Профиль не заполнен - редирект на онбординг по роли
+        const role = typedUser.role.toLowerCase();
+        router.push(`/onboarding/${role}`);
       }
     }
-  }, [user, router]);
+  }, [user, isLoading, router]);
 
   // Показываем лоадер во время проверки авторизации
   if (isLoading) {
@@ -45,7 +50,7 @@ export default function OnboardingPage() {
         <Card>
           <CardContent className="p-6">
             <p className="text-center mb-4">Требуется авторизация</p>
-            <Button className="w-full" onClick={() => router.push('/auth/login')}>
+            <Button className="w-full" onClick={() => router.push('/sign-in')}>
               Войти
             </Button>
           </CardContent>
@@ -54,5 +59,10 @@ export default function OnboardingPage() {
     );
   }
 
-  return <OnboardingWizard />;
+  // Показываем лоадер во время редиректа
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
 }

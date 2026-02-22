@@ -1,119 +1,444 @@
 'use client';
 
-import Link from 'next/link';
+import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/shared/api/client';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/shared/ui/button';
-import { Logo } from '@/shared/ui/logo';
-import { ThemeToggle } from '@/features/theme-toggle';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/ui/card';
+import { Avatar } from '@/shared/ui/avatar';
+import { Badge } from '@/shared/ui/badge';
+import {
+  Calendar,
+  Clock,
+  Star,
+  Heart,
+  Bell,
+  ChevronRight,
+  MapPin,
+  TrendingUp,
+  Users
+} from 'lucide-react';
+import { cn } from '@/shared/lib/utils';
+import { useAuth } from '@/features/auth/hooks/auth.hooks';
 
-interface FeatureCardProps {
-  title: string;
-  description: string;
-  features: string[];
-}
+type Tab = 'appointments' | 'favorites' | 'history';
 
-function FeatureCard({ title, description, features }: FeatureCardProps) {
-  return (
-    <div className="relative drop-shadow-xl w-full h-64 overflow-hidden rounded-[40px]">
-      <div className="absolute flex flex-col items-start justify-center z-[1] rounded-[40px] inset-[2px] p-6 bg-background">
-        <h3 className="font-heading text-xl font-bold mb-1 text-foreground">{title}</h3>
-        <p className="text-sm text-muted-foreground mb-4">{description}</p>
-        <ul className="space-y-2 text-sm">
-          {features.map((feature, index) => (
-            <li key={index} className="flex items-center gap-2 text-foreground">
-              <span className="text-primary">✓</span>
-              <span>{feature}</span>
-            </li>
-          ))}
-        </ul>
+export default function ClientDashboardPage() {
+  const router = useRouter();
+  const { user, isAuthenticated, isLoading } = useAuth();
+  const [activeTab, setActiveTab] = useState<Tab>('appointments');
+
+  // Fetch client appointments - вызываем ДО любых условных возвратов
+  const { data: appointments, isLoading: appointmentsLoading } = useQuery({
+    queryKey: ['client-appointments'],
+    queryFn: () => api.appointments.getClientAppointments(),
+    enabled: isAuthenticated && user?.role === 'CLIENT',
+  });
+
+  // Fetch favorite masters - вызываем ДО любых условных возвратов
+  const { data: favorites, isLoading: favoritesLoading } = useQuery({
+    queryKey: ['client-favorites'],
+    queryFn: () => api.favorites.getAll(),
+    enabled: isAuthenticated && user?.role === 'CLIENT',
+  });
+
+  // Redirect if not authenticated or not a client
+  useEffect(() => {
+    if (!isLoading) {
+      if (!isAuthenticated) {
+        router.push('/sign-in');
+      } else if (user?.role !== 'CLIENT') {
+        // If master, redirect to master dashboard
+        router.push('/dashboard');
+      }
+    }
+  }, [isAuthenticated, isLoading, user, router]);
+
+  if (isLoading || !isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
-      <div className="absolute w-56 h-48 bg-primary/30 blur-[50px] -left-1/2 -top-1/2" />
-    </div>
-  );
-}
+    );
+  }
 
-export default function HomePage() {
+  // Upcoming appointments (future)
+  const upcomingAppointments = appointments?.filter(
+    (a) => new Date(a.dateTime) > new Date()
+  ) || [];
+
+  // Past appointments (history)
+  const pastAppointments = appointments?.filter(
+    (a) => new Date(a.dateTime) <= new Date()
+  ) || [];
+
+  const formatDateTime = (dateTime: string) => {
+    const date = new Date(dateTime);
+    return date.toLocaleDateString('ru-RU', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const formatStatus = (status: string) => {
+    const statusMap: Record<string, 'default' | 'success' | 'warning' | 'error'> = {
+      PENDING: 'warning',
+      CONFIRMED: 'success',
+      COMPLETED: 'default',
+      CANCELLED: 'error',
+      NO_SHOW: 'error',
+    };
+    return statusMap[status] || 'default';
+  };
+
+  const statusLabels: Record<string, string> = {
+    PENDING: 'Ожидает подтверждения',
+    CONFIRMED: 'Подтверждено',
+    COMPLETED: 'Завершено',
+    CANCELLED: 'Отменено',
+    NO_SHOW: 'Не явился',
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <Logo />
-          </Link>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <Link href="/auth/login">
-              <Button variant="ghost">Войти</Button>
-            </Link>
-            <Link href="/auth/register">
-              <Button>Регистрация</Button>
-            </Link>
+      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="font-heading text-2xl font-bold">Кабинет клиента</h1>
+              <p className="text-sm text-muted-foreground">
+                Управление записями и избранными мастерами
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => router.push('/dashboard/notifications')}
+              >
+                <Bell className="w-5 h-5" />
+              </Button>
+              <Button onClick={() => router.push('/search')}>
+                Найти мастера
+              </Button>
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex gap-2 mt-4">
+            <Button
+              variant={activeTab === 'appointments' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setActiveTab('appointments')}
+            >
+              <Calendar className="w-4 h-4 mr-2" />
+              Записи
+            </Button>
+            <Button
+              variant={activeTab === 'favorites' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setActiveTab('favorites')}
+            >
+              <Heart className="w-4 h-4 mr-2" />
+              Избранное
+            </Button>
+            <Button
+              variant={activeTab === 'history' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setActiveTab('history')}
+            >
+              <Clock className="w-4 h-4 mr-2" />
+              История
+            </Button>
           </div>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <main className="container mx-auto px-4 py-16">
-        <div className="text-center mb-16">
-          <h2 className="font-heading text-4xl md:text-6xl font-bold mb-4">
-            Онлайн-запись для мастеров
-          </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
-            Платформа для управления услугами, расписанием и записями клиентов
-          </p>
-          <div className="flex gap-4 justify-center">
-            <Link href="/auth/register?role=master">
-              <Button size="lg">Я мастер</Button>
-            </Link>
-            <Link href="/auth/register?role=client">
-              <Button variant="outline" size="lg">Я клиент</Button>
-            </Link>
+      {/* Main Content */}
+      <main className="container mx-auto px-4 py-8">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-primary/10 rounded-full">
+                  <Calendar className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Активные записи</p>
+                  <p className="text-2xl font-bold">{upcomingAppointments.length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-success/10 rounded-full">
+                  <TrendingUp className="w-6 h-6 text-success" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Завершено</p>
+                  <p className="text-2xl font-bold">{pastAppointments.length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-warning/10 rounded-full">
+                  <Heart className="w-6 h-6 text-warning" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Избранные</p>
+                  <p className="text-2xl font-bold">{favorites?.length || 0}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-info/10 rounded-full">
+                  <Users className="w-6 h-6 text-info" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Мастеров</p>
+                  <p className="text-2xl font-bold">
+                    {new Set(appointments?.map(a => a.masterId)).size}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Tab Content */}
+        {activeTab === 'appointments' && (
+          <div className="space-y-4">
+            <h2 className="font-heading font-semibold text-xl mb-4">
+              Предстоящие записи
+            </h2>
+
+            {appointmentsLoading ? (
+              <div className="flex items-center justify-center py-16">
+                <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+              </div>
+            ) : upcomingAppointments.length > 0 ? (
+              <div className="grid gap-4">
+                {upcomingAppointments.map((appointment) => (
+                  <Card key={appointment.id} className="card-hover">
+                    <CardContent className="pt-6">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-start gap-4">
+                          <Avatar
+                            src={appointment.master?.avatarUrl}
+                            fallback={appointment.master?.fullName?.charAt(0) || 'M'}
+                            size="lg"
+                          />
+                          <div>
+                            <h3 className="font-heading font-semibold text-lg">
+                              {appointment.master?.fullName}
+                            </h3>
+                            <p className="text-sm text-muted-foreground">
+                              {appointment.service?.name}
+                            </p>
+                            <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Calendar className="w-4 h-4" />
+                                {formatDateTime(appointment.dateTime)}
+                              </span>
+                              <Badge variant={formatStatus(appointment.status)}>
+                                {statusLabels[appointment.status]}
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => router.push(`/masters/${appointment.masterId}`)}
+                          >
+                            К мастеру
+                          </Button>
+                          {appointment.status === 'PENDING' && (
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                            >
+                              Отменить
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="py-16 text-center">
+                  <Calendar className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="font-heading font-semibold text-lg mb-2">
+                    Нет предстоящих записей
+                  </h3>
+                  <p className="text-muted-foreground mb-4">
+                    Запишитесь к мастеру прямо сейчас
+                  </p>
+                  <Button onClick={() => router.push('/search')}>
+                    Найти мастера
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
           </div>
-        </div>
+        )}
 
-        {/* Features */}
-        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          <FeatureCard
-            title="Для мастеров"
-            description="Управление услугами и расписанием"
-            features={[
-              'Создание услуг',
-              'Настройка графика работы',
-              'Управление записями',
-              'Статистика и аналитика',
-            ]}
-          />
+        {activeTab === 'favorites' && (
+          <div className="space-y-4">
+            <h2 className="font-heading font-semibold text-xl mb-4">
+              Избранные мастера
+            </h2>
 
-          <FeatureCard
-            title="Для клиентов"
-            description="Поиск и запись к мастерам"
-            features={[
-              'Поиск мастеров по услугам',
-              'Онлайн-запись 24/7',
-              'Отзывы и рейтинги',
-              'История записей',
-            ]}
-          />
+            {favoritesLoading ? (
+              <div className="flex items-center justify-center py-16">
+                <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+              </div>
+            ) : favorites && favorites.length > 0 ? (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {favorites.map((fav) => (
+                  <Card
+                    key={fav.id}
+                    className="card-hover cursor-pointer"
+                    onClick={() => router.push(`/masters/${fav.masterId}`)}
+                  >
+                    <CardContent className="pt-6">
+                      <div className="flex items-start gap-4">
+                        <Avatar
+                          src={fav.master?.avatarUrl}
+                          fallback={fav.master?.fullName?.charAt(0) || 'M'}
+                          size="lg"
+                        />
+                        <div className="flex-1">
+                          <h3 className="font-heading font-semibold">
+                            {fav.master?.fullName}
+                          </h3>
+                          <div className="flex items-center gap-1 mt-1 text-sm text-muted-foreground">
+                            <Star className="w-3 h-3 fill-warning text-warning" />
+                            <span>{fav.master?.rating?.toFixed(1) || '0.0'}</span>
+                          </div>
+                          <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                            <MapPin className="w-3 h-3" />
+                            <span>{fav.master?.workFormat}</span>
+                          </div>
+                        </div>
+                        <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="py-16 text-center">
+                  <Heart className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="font-heading font-semibold text-lg mb-2">
+                    Нет избранных мастеров
+                  </h3>
+                  <p className="text-muted-foreground mb-4">
+                    Добавьте мастеров в избранное для быстрого доступа
+                  </p>
+                  <Button onClick={() => router.push('/search')}>
+                    Найти мастера
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
 
-          <FeatureCard
-            title="Преимущества"
-            description="Почему выбирают нас"
-            features={[
-              'Удобный интерфейс',
-              'Автоматические напоминания',
-              'Подтверждение записей',
-              'Поддержка 24/7',
-            ]}
-          />
-        </div>
+        {activeTab === 'history' && (
+          <div className="space-y-4">
+            <h2 className="font-heading font-semibold text-xl mb-4">
+              История записей
+            </h2>
+
+            {appointmentsLoading ? (
+              <div className="flex items-center justify-center py-16">
+                <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+              </div>
+            ) : pastAppointments.length > 0 ? (
+              <div className="grid gap-4">
+                {pastAppointments.map((appointment) => (
+                  <Card key={appointment.id}>
+                    <CardContent className="pt-6">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-start gap-4">
+                          <Avatar
+                            src={appointment.master?.avatarUrl}
+                            fallback={appointment.master?.fullName?.charAt(0) || 'M'}
+                            size="lg"
+                          />
+                          <div>
+                            <h3 className="font-heading font-semibold text-lg">
+                              {appointment.master?.fullName}
+                            </h3>
+                            <p className="text-sm text-muted-foreground">
+                              {appointment.service?.name}
+                            </p>
+                            <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Calendar className="w-4 h-4" />
+                                {formatDateTime(appointment.dateTime)}
+                              </span>
+                              <Badge variant={formatStatus(appointment.status)}>
+                                {statusLabels[appointment.status]}
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          {appointment.status === 'COMPLETED' && (
+                            <Button variant="outline" size="sm">
+                              <Star className="w-4 h-4 mr-2" />
+                              Оставить отзыв
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="py-16 text-center">
+                  <Clock className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="font-heading font-semibold text-lg mb-2">
+                    История пуста
+                  </h3>
+                  <p className="text-muted-foreground mb-4">
+                    У вас пока нет завершенных записей
+                  </p>
+                  <Button onClick={() => router.push('/search')}>
+                    Записаться к мастеру
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
       </main>
-
-      {/* Footer */}
-      <footer className="border-t mt-16 py-8">
-        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>© 2026 Appointy. Все права защищены.</p>
-        </div>
-      </footer>
     </div>
   );
 }

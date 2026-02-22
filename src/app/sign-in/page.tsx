@@ -70,7 +70,7 @@ export default function LoginPage() {
           </form>
           <div className="mt-4 text-center text-sm">
             Нет аккаунта?{' '}
-            <Link href="/auth/register" className="text-primary hover:underline">
+            <Link href="/sign-up" className="text-primary hover:underline">
               Зарегистрироваться
             </Link>
           </div>

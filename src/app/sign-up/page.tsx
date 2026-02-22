@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useRegister } from '@/features/auth/hooks/auth.hooks';
 import { Button } from '@/shared/ui/button';
@@ -10,11 +10,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/sha
 
 type UserRole = 'MASTER' | 'CLIENT';
 
-export default function RegisterPage() {
+export default function SignUpPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<UserRole>('CLIENT');
+  // Получаем роль из query параметра или по умолчанию CLIENT
+  const initialRole = (searchParams.get('role')?.toUpperCase() as UserRole) || 'CLIENT';
+  const [role, setRole] = useState<UserRole>(initialRole);
   const register = useRegister();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -95,7 +98,7 @@ export default function RegisterPage() {
           </form>
           <div className="mt-4 text-center text-sm">
             Уже есть аккаунт?{' '}
-            <Link href="/auth/login" className="text-primary hover:underline">
+            <Link href="/sign-in" className="text-primary hover:underline">
               Войти
             </Link>
           </div>
