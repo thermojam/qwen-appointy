@@ -16,27 +16,25 @@ interface MasterOnboardingData {
   fullName: string;
   avatarUrl: string;
   experienceYears: number;
-  
+
   // Step 2
   workFormat: WorkFormat;
   address: string;
   latitude?: number;
   longitude?: number;
-  onlinePlatform: string;
-  
+
   // Step 3
   description: string;
   serviceIds: string[];
-  portfolioImages: string[];
-  
+
   // Step 4
   bookingConfirmationRequired: boolean;
   minCancellationTime: number;
   maxBookingLeadTime: number;
-  
+
   // Step 5
   schedule: ScheduleDay[];
-  
+
   // Step 6
   agreedToTerms: boolean;
 }
@@ -45,10 +43,10 @@ interface ClientOnboardingData {
   // Step 1
   fullName: string;
   avatarUrl: string;
-  
+
   // Step 2
   interests: string[];
-  
+
   // Step 3
   agreedToTerms: boolean;
 }
@@ -56,27 +54,25 @@ interface ClientOnboardingData {
 interface OnboardingState {
   // Common
   currentStep: number;
-  isMaster: boolean;
-  
+
   // Master data
   master: MasterOnboardingData;
-  
+
   // Client data
   client: ClientOnboardingData;
-  
+
   // Actions
   setCurrentStep: (step: number) => void;
-  setIsMaster: (isMaster: boolean) => void;
-  
+
   // Master actions
   updateMasterData: (data: Partial<MasterOnboardingData>) => void;
   updateMasterSchedule: (schedule: ScheduleDay[]) => void;
-  
+
   // Client actions
   updateClientData: (data: Partial<ClientOnboardingData>) => void;
   addClientInterest: (interest: string) => void;
   removeClientInterest: (interest: string) => void;
-  
+
   // Reset
   resetOnboarding: () => void;
 }
@@ -95,8 +91,7 @@ export const useOnboardingStore = create<OnboardingState>()(
   persist(
     (set) => ({
       currentStep: 0,
-      isMaster: false,
-      
+
       master: {
         fullName: '',
         avatarUrl: '',
@@ -105,50 +100,44 @@ export const useOnboardingStore = create<OnboardingState>()(
         address: '',
         latitude: undefined,
         longitude: undefined,
-        onlinePlatform: '',
         description: '',
         serviceIds: [],
-        portfolioImages: [],
         bookingConfirmationRequired: true,
         minCancellationTime: 24,
         maxBookingLeadTime: 30,
         schedule: defaultSchedule,
         agreedToTerms: false,
       },
-      
+
       client: {
         fullName: '',
         avatarUrl: '',
         interests: [],
         agreedToTerms: false,
       },
-      
+
       setCurrentStep: (step) => {
         set({ currentStep: step });
       },
-      
-      setIsMaster: (isMaster) => {
-        set({ isMaster });
-      },
-      
+
       updateMasterData: (data) => {
         set((state) => ({
           master: { ...state.master, ...data },
         }));
       },
-      
+
       updateMasterSchedule: (schedule) => {
         set((state) => ({
           master: { ...state.master, schedule },
         }));
       },
-      
+
       updateClientData: (data) => {
         set((state) => ({
           client: { ...state.client, ...data },
         }));
       },
-      
+
       addClientInterest: (interest) => {
         set((state) => ({
           client: {
@@ -157,7 +146,7 @@ export const useOnboardingStore = create<OnboardingState>()(
           },
         }));
       },
-      
+
       removeClientInterest: (interest) => {
         set((state) => ({
           client: {
@@ -166,7 +155,7 @@ export const useOnboardingStore = create<OnboardingState>()(
           },
         }));
       },
-      
+
       resetOnboarding: () => {
         set({
           currentStep: 0,
@@ -178,10 +167,8 @@ export const useOnboardingStore = create<OnboardingState>()(
             address: '',
             latitude: undefined,
             longitude: undefined,
-            onlinePlatform: '',
             description: '',
             serviceIds: [],
-            portfolioImages: [],
             bookingConfirmationRequired: true,
             minCancellationTime: 24,
             maxBookingLeadTime: 30,
@@ -202,7 +189,6 @@ export const useOnboardingStore = create<OnboardingState>()(
       partialize: (state) => ({
         master: state.master,
         client: state.client,
-        isMaster: state.isMaster,
         currentStep: state.currentStep,
       }),
     }

@@ -170,12 +170,16 @@ router.get(
     const masterId = String(req.params.masterId);
     const { date, serviceDuration } = req.query;
 
+    console.log('[Schedule API] Request:', { masterId, date, serviceDuration });
+
     if (!date || !serviceDuration) {
       throw AppError.badRequest('Date and serviceDuration are required');
     }
 
     const parsedDate = new Date(date as string);
     const parsedDuration = parseInt(serviceDuration as string, 10);
+
+    console.log('[Schedule API] Parsed:', { parsedDate, parsedDuration });
 
     if (isNaN(parsedDate.getTime())) {
       throw AppError.badRequest('Invalid date format');
@@ -190,6 +194,8 @@ router.get(
       parsedDate,
       parsedDuration
     );
+
+    console.log('[Schedule API] Response slots:', slots);
 
     successResponse(res, slots);
   })

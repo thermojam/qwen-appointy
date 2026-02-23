@@ -5,15 +5,20 @@ import { ThemeProvider as NextThemesProvider, useTheme } from 'next-themes';
 
 function ThemeInitializer() {
   const { setTheme } = useTheme();
-  
+
   useEffect(() => {
-    // Сбрасываем тему на light при первом запуске
-    const storedTheme = localStorage.getItem('theme');
-    if (!storedTheme) {
+    // Проверяем тему при первом запуске
+    try {
+      const storedTheme = localStorage.getItem('theme');
+      if (!storedTheme) {
+        setTheme('light');
+      }
+    } catch {
+      // localStorage недоступен - используем тему по умолчанию
       setTheme('light');
     }
   }, [setTheme]);
-  
+
   return null;
 }
 

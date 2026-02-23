@@ -6,18 +6,35 @@ import { api } from '@/shared/api/client';
 import { BookingWizard } from '@/shared/ui/booking-wizard';
 import { Button } from '@/shared/ui/button';
 import { ChevronLeft } from 'lucide-react';
+import { useState } from 'react';
 
 export default function BookPage() {
   const params = useParams();
   const router = useRouter();
   const masterId = params.masterId as string;
   const serviceId = params.serviceId as string;
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   // Fetch master details
   const { data: master, isLoading } = useQuery({
     queryKey: ['master', masterId],
     queryFn: () => api.search.masterById(masterId),
     enabled: !!masterId,
+  });
+
+  // Fetch available slots when date is selected
+  const { data: availableSlots, refetch: refetchSlots } = useQuery({
+    queryKey: ['slots', masterId, serviceId, selectedDate],
+    queryFn: async () => {
+      if (!selectedDate) return [];
+      const service = master?.services?.find(s => s.id === serviceId);
+      if (!service) return [];
+      console.log('[BookPage] Fetching slots for:', { masterId, date: selectedDate, duration: service.duration });
+      const slots = await api.schedule.getAvailableSlots(masterId, selectedDate, service.duration);
+      console.log('[BookPage] Available slots:', slots);
+      return slots;
+    },
+    enabled: !!selectedDate, // Trigger when date is selected
   });
 
   if (isLoading) {
@@ -46,14 +63,23 @@ export default function BookPage() {
       {/* Header */}
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-4">
-          <Button
-            variant="ghost"
-            onClick={() => router.push(`/masters/${masterId}`)}
-            className="gap-2"
-          >
-            <ChevronLeft className="w-4 h-4" />
-            Назад к профилю
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              onClick={() => router.push(`/masters/${masterId}`)}
+              className="gap-2"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Назад
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => router.push('/client')}
+              size="sm"
+            >
+              В дашборд
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -73,11 +99,21 @@ export default function BookPage() {
             masterId={masterId}
             masterName={master.fullName}
             services={master.services || []}
-            onSubmit={(data) => {
-              // Handle successful booking
-              console.log('Booking created:', data);
-              // Redirect to appointments or show success message
-              router.push('/appointments');
+            availableSlots={availableSlots || []}
+            onDateSelect={(date) => {
+              const dateStr = date.toISOString().split('T')[0];
+              setSelectedDate(dateStr);
+            }}
+            onSubmit={async (data) => {
+              console.log('[BookPage] Creating appointment:', data);
+              try {
+                await api.appointments.createAppointment(data);
+                console.log('[BookPage] Appointment created successfully');
+                router.push('/client');
+              } catch (error) {
+                console.error('[BookPage] Failed to create appointment:', error);
+                alert('Не удалось создать запись. Попробуйте снова.');
+              }
             }}
           />
         </div>

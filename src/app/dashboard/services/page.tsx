@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/shared/api/client';
-import type { Service, CreateServiceInput } from '@/shared/types/api';
+import type { Service, CreateServiceInput, UpdateServiceInput } from '@/shared/types/api';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card';
@@ -14,7 +14,8 @@ export default function ServicesPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [isCreating, setIsCreating] = useState(false);
-  const [newService, setNewService] = useState<CreateServiceInput>({
+  const [editingService, setEditingService] = useState<Service | null>(null);
+  const [formData, setFormData] = useState<CreateServiceInput | UpdateServiceInput>({
     name: '',
     description: '',
     duration: 60,
@@ -31,7 +32,17 @@ export default function ServicesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['services'] });
       setIsCreating(false);
-      setNewService({ name: '', description: '', duration: 60, price: 0 });
+      setFormData({ name: '', description: '', duration: 60, price: 0 });
+    },
+  });
+
+  const updateService = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateServiceInput }) =>
+      api.services.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['services'] });
+      setEditingService(null);
+      setFormData({ name: '', description: '', duration: 60, price: 0 });
     },
   });
 
@@ -42,9 +53,38 @@ export default function ServicesPage() {
     },
   });
 
+  const toggleServiceStatus = useMutation({
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
+      api.services.update(id, { isActive }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['services'] });
+    },
+  });
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await createService.mutateAsync(newService);
+    if (editingService) {
+      await updateService.mutateAsync({ id: editingService.id, data: formData });
+    } else {
+      await createService.mutateAsync(formData as CreateServiceInput);
+    }
+  };
+
+  const handleEdit = (service: Service) => {
+    setEditingService(service);
+    setFormData({
+      name: service.name,
+      description: service.description || '',
+      duration: service.duration,
+      price: Number(service.price),
+    });
+    setIsCreating(false);
+  };
+
+  const handleCancel = () => {
+    setIsCreating(false);
+    setEditingService(null);
+    setFormData({ name: '', description: '', duration: 60, price: 0 });
   };
 
   return (
@@ -74,13 +114,13 @@ export default function ServicesPage() {
         'p-8 transition-all duration-300 ease-in-out',
         'ml-20 md:ml-20 lg:ml-64'
       )}>
-        {/* Create Service Form */}
-        {isCreating && (
+        {/* Create/Edit Service Form */}
+        {(isCreating || editingService) && (
           <Card className="mb-8">
             <CardHeader>
-              <CardTitle>Новая услуга</CardTitle>
+              <CardTitle>{editingService ? 'Редактирование услуги' : 'Новая услуга'}</CardTitle>
               <CardDescription>
-                Заполните информацию об услуге
+                {editingService ? 'Измените информацию об услуге' : 'Заполните информацию об услуге'}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -92,9 +132,9 @@ export default function ServicesPage() {
                     </label>
                     <Input
                       id="name"
-                      value={newService.name}
+                      value={formData.name}
                       onChange={(e) =>
-                        setNewService({ ...newService, name: e.target.value })
+                        setFormData({ ...formData, name: e.target.value })
                       }
                       required
                     />
@@ -107,10 +147,10 @@ export default function ServicesPage() {
                       id="price"
                       type="number"
                       min={0}
-                      value={newService.price}
+                      value={formData.price}
                       onChange={(e) =>
-                        setNewService({
-                          ...newService,
+                        setFormData({
+                          ...formData,
                           price: parseFloat(e.target.value) || 0,
                         })
                       }
@@ -124,9 +164,9 @@ export default function ServicesPage() {
                   </label>
                   <Input
                     id="description"
-                    value={newService.description}
+                    value={formData.description}
                     onChange={(e) =>
-                      setNewService({ ...newService, description: e.target.value })
+                      setFormData({ ...formData, description: e.target.value })
                     }
                   />
                 </div>
@@ -139,10 +179,10 @@ export default function ServicesPage() {
                     type="number"
                     min={15}
                     step={15}
-                    value={newService.duration}
+                    value={formData.duration}
                     onChange={(e) =>
-                      setNewService({
-                        ...newService,
+                      setFormData({
+                        ...formData,
                         duration: parseInt(e.target.value) || 60,
                       })
                     }
@@ -152,14 +192,14 @@ export default function ServicesPage() {
                 <div className="flex gap-2">
                   <Button
                     type="submit"
-                    disabled={createService.isPending}
+                    disabled={createService.isPending || updateService.isPending}
                   >
-                    {createService.isPending ? 'Сохранение...' : 'Сохранить'}
+                    {createService.isPending || updateService.isPending ? 'Сохранение...' : 'Сохранить'}
                   </Button>
                   <Button
                     type="button"
                     variant="ghost"
-                    onClick={() => setIsCreating(false)}
+                    onClick={handleCancel}
                   >
                     Отмена
                   </Button>
@@ -203,11 +243,19 @@ export default function ServicesPage() {
                       variant="outline"
                       size="sm"
                       className="flex-1"
-                      onClick={() => {
-                        // Edit functionality
-                      }}
+                      onClick={() => handleEdit(service)}
                     >
-                      Редактировать
+                      {editingService?.id === service.id ? 'Отмена' : 'Редактировать'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => toggleServiceStatus.mutate({ 
+                        id: service.id, 
+                        isActive: !service.isActive 
+                      })}
+                    >
+                      {service.isActive ? 'Деактивировать' : 'Активировать'}
                     </Button>
                     <Button
                       variant="destructive"

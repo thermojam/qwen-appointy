@@ -12,11 +12,8 @@ import { Input } from '@/shared/ui/input';
 import { useRouter } from 'next/navigation';
 import {
   User,
-  Settings,
   Clock,
   MapPin,
-  Bell,
-  Shield,
   Save,
   Loader2,
 } from 'lucide-react';
@@ -66,6 +63,24 @@ export default function SettingsPage() {
     router.push('/');
   };
 
+  // Формы с дефолтными значениями
+  const [profileForm, setProfileForm] = useState({
+    fullName: '',
+    description: '',
+    experienceYears: 0,
+  });
+
+  const [bookingForm, setBookingForm] = useState({
+    bookingConfirmationRequired: true,
+    minCancellationTime: 24,
+    maxBookingLeadTime: 30,
+  });
+
+  const [workForm, setWorkForm] = useState({
+    workFormat: 'BOTH' as WorkFormat,
+    address: '',
+  });
+
   if (!currentUser) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -76,23 +91,6 @@ export default function SettingsPage() {
 
   const user = currentUser;
   const masterData = user.master;
-
-  const [profileForm, setProfileForm] = useState({
-    fullName: settings?.fullName || masterData?.fullName || '',
-    description: settings?.description || '',
-    experienceYears: settings?.experienceYears || 0,
-  });
-
-  const [bookingForm, setBookingForm] = useState({
-    bookingConfirmationRequired: settings?.bookingConfirmationRequired ?? true,
-    minCancellationTime: settings?.minCancellationTime ?? 24,
-    maxBookingLeadTime: settings?.maxBookingLeadTime ?? 30,
-  });
-
-  const [workForm, setWorkForm] = useState({
-    workFormat: settings?.workFormat || 'BOTH',
-    address: settings?.address || '',
-  });
 
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -311,7 +309,7 @@ export default function SettingsPage() {
                             Требуется подтверждение записи
                           </label>
                           <p className="text-xs text-muted-foreground mt-1">
-                            Если включено, новые записи будут иметь статус "Ожидает подтверждения"
+                            Если включено, новые записи будут иметь статус &quot;Ожидает подтверждения&quot;
                           </p>
                         </div>
                       </div>

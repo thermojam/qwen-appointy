@@ -1,7 +1,7 @@
 'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useState, useEffect, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useRestoreAuth } from '@/features/auth/store/auth.store';
 import { ThemeProvider } from '@/features/theme-provider';
 
@@ -11,19 +11,17 @@ interface ProvidersProps {
 
 /**
  * Компонент для восстановления auth состояния из localStorage
+ * Используем useRef для избежания cascading renders
  */
 function AuthRestore({ children }: { children: ReactNode }) {
   const restoreAuth = useRestoreAuth();
   const [isRestored, setIsRestored] = useState(false);
 
-  useEffect(() => {
-    // Восстанавливаем токены из localStorage при загрузке
+  // Восстанавливаем токены из localStorage при первом рендере
+  if (!isRestored) {
     restoreAuth();
     setIsRestored(true);
-  }, [restoreAuth]);
-
-  if (!isRestored) {
-    return null; // Или лоадер, если нужно
+    return null;
   }
 
   return <>{children}</>;

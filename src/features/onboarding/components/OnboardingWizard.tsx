@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import { api } from '@/shared/api/client';
@@ -36,11 +36,7 @@ const CLIENT_STEP_LABELS = [
   'Проверка',
 ];
 
-export interface OnboardingWizardProps {
-  role?: 'MASTER' | 'CLIENT';
-}
-
-export function OnboardingWizard({ role }: OnboardingWizardProps) {
+export function OnboardingWizard() {
   const router = useRouter();
   const { data: user } = useCurrentUser();
   const { currentStep, setCurrentStep, master, client, updateMasterData, updateClientData, resetOnboarding } =
@@ -48,9 +44,8 @@ export function OnboardingWizard({ role }: OnboardingWizardProps) {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Определяем роль из prop или из пользователя
-  const userRole = role || user?.role;
-  const isMaster = userRole === 'MASTER';
+  // Роль определяется из пользователя
+  const isMaster = user?.role === 'MASTER';
   const totalSteps = isMaster ? 6 : 3;
 
   // Master mutation
@@ -98,28 +93,28 @@ export function OnboardingWizard({ role }: OnboardingWizardProps) {
     },
   });
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (currentStep < totalSteps - 1) {
       setCurrentStep(currentStep + 1);
     }
-  };
+  }, [currentStep, totalSteps, setCurrentStep]);
 
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
     }
-  };
+  }, [currentStep, setCurrentStep]);
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     setIsSubmitting(true);
     if (isMaster) {
       await completeMaster.mutateAsync();
     } else {
       await completeClient.mutateAsync();
     }
-  };
+  }, [isMaster, completeMaster, completeClient]);
 
-  // Render current step
+  // Render current step - оптимизировано: зависит только от currentStep и isMaster
   const renderStep = useMemo(() => {
     if (isMaster) {
       switch (currentStep) {
@@ -150,7 +145,7 @@ export function OnboardingWizard({ role }: OnboardingWizardProps) {
           return null;
       }
     }
-  }, [currentStep, isMaster, master, client]);
+  }, [currentStep, isMaster, handleNext, handleBack, handleSubmit]);
 
   if (!user) {
     return (

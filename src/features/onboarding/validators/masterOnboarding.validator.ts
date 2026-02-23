@@ -14,7 +14,6 @@ export const masterStep2Schema = z.object({
   address: z.string().min(5, 'Укажите адрес').optional().or(z.literal('')),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
-  onlinePlatform: z.string().optional().or(z.literal('')),
 }).refine((data) => {
   if (data.workFormat === 'OFFLINE' || data.workFormat === 'BOTH') {
     return !!data.address;
@@ -29,7 +28,6 @@ export const masterStep2Schema = z.object({
 export const masterStep3Schema = z.object({
   description: z.string().max(1000, 'Описание не более 1000 символов').optional().or(z.literal('')),
   serviceIds: z.array(z.string()).min(1, 'Выберите хотя бы одну услугу'),
-  portfolioImages: z.array(z.string().url()).optional(),
 });
 
 // Шаг 4: Правила бронирования

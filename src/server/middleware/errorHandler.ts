@@ -43,6 +43,16 @@ export const globalErrorHandler = (
   res: Response,
   next: NextFunction
 ) => {
-  console.error('[Global Error Handler]:', err);
+  // Расширенное логирование для отладки
+  console.error('[Global Error Handler]:', {
+    error: err.message,
+    stack: err.stack,
+    path: req.path,
+    method: req.method,
+    body: req.body,
+    query: req.query,
+    params: req.params,
+  });
+  
   errorResponse(res, err);
 };

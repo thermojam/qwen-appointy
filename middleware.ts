@@ -1,13 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// Публичные роуты (доступны без авторизации)
-const PUBLIC_ROUTES = [
-  '/sign-in',
-  '/sign-up',
-  '/onboarding',
-];
-
 // Роуты которые требуют авторизации
 const PROTECTED_ROUTES = [
   '/',
@@ -32,7 +25,7 @@ const MASTER_ROUTES = [
 
 // Роуты только для клиентов
 const CLIENT_ROUTES = [
-  '/',
+  '/client',
   '/profile',
   '/favorites',
   '/appointments',
@@ -42,13 +35,13 @@ const CLIENT_ROUTES = [
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  
+
   // Получаем токены из cookies
   const authTokens = request.cookies.get('auth-tokens');
   const isAuthenticated = !!authTokens;
-  
+
   let userRole: 'MASTER' | 'CLIENT' | null = null;
-  
+
   if (authTokens?.value) {
     try {
       const parsed = JSON.parse(authTokens.value);
@@ -58,38 +51,36 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // Проверяем публичные роуты
-  const isPublicRoute = PUBLIC_ROUTES.some(route => 
-    pathname === route || pathname.startsWith('/onboarding')
-  );
-
   // Проверяем защищенные роуты
-  const isProtectedRoute = PROTECTED_ROUTES.some(route => 
+  const isProtectedRoute = PROTECTED_ROUTES.some(route =>
     pathname.startsWith(route)
   );
 
   // Проверяем роуты мастеров
-  const isMasterRoute = MASTER_ROUTES.some(route => 
+  const isMasterRoute = MASTER_ROUTES.some(route =>
     pathname.startsWith(route)
   );
 
   // Проверяем роуты клиентов
-  const isClientRoute = CLIENT_ROUTES.some(route => 
+  const isClientRoute = CLIENT_ROUTES.some(route =>
     pathname.startsWith(route) && !pathname.startsWith('/dashboard')
   );
 
-  // Редирект с публичных роутов если авторизован
-  if (isPublicRoute && isAuthenticated && userRole) {
-    if (userRole === 'CLIENT') {
-      return NextResponse.redirect(new URL('/', request.url));
-    }
-    if (userRole === 'MASTER') {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+  // Редирект с sign-in/sign-up если авторизован
+  // С лендинга (/) не редиректим - даем возможность просмотра
+  if (isAuthenticated && userRole && pathname !== '/') {
+    if (pathname.startsWith('/sign-in') || pathname.startsWith('/sign-up')) {
+      if (userRole === 'CLIENT') {
+        return NextResponse.redirect(new URL('/client', request.url));
+      }
+      if (userRole === 'MASTER') {
+        return NextResponse.redirect(new URL('/dashboard', request.url));
+      }
     }
   }
 
-  // Редирект на sign-in если не авторизован и пытаемся зайти на главную (клиентский дашборд)
-  if (pathname === '/' && !isAuthenticated) {
+  // Редирект на sign-in если не авторизован и пытаемся зайти на клиентский дашборд
+  if (pathname === '/client' && !isAuthenticated) {
     const signInUrl = new URL('/sign-in', request.url);
     signInUrl.searchParams.set('callbackUrl', pathname);
     return NextResponse.redirect(signInUrl);
@@ -103,12 +94,12 @@ export function middleware(request: NextRequest) {
   }
 
   // Проверка доступа для мастеров
-  if (isMasterRoute && isAuthenticated && userRole !== 'MASTER') {
+  if (isAuthenticated && isMasterRoute && userRole !== 'MASTER') {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
   // Проверка доступа для клиентов
-  if (isClientRoute && isAuthenticated && userRole !== 'CLIENT') {
+  if (isAuthenticated && isClientRoute && userRole !== 'CLIENT') {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 

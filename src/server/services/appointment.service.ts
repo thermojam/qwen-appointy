@@ -1,6 +1,7 @@
 import { prisma } from '../db/prisma';
 import { AppError } from '../utils/errors';
 import { AppointmentStatus } from '@prisma/client';
+import { notificationService } from './notification.service';
 
 interface CreateAppointmentInput {
   masterId: string;
@@ -93,6 +94,24 @@ export const appointmentService = {
         },
       },
     });
+
+    console.log('[AppointmentService] Appointment created:', {
+      id: appointment.id,
+      masterId: data.masterId,
+      userId: master.userId,
+      status: initialStatus,
+    });
+
+    // Create notification for master about new appointment
+    console.log('[AppointmentService] Creating notification for user:', master.userId);
+    await notificationService.notifyAppointmentCreated(
+      master.userId,
+      appointment.id,
+      appointment.client.fullName,
+      appointment.service.name,
+      dateTime
+    );
+    console.log('[AppointmentService] Notification sent successfully');
 
     return appointment;
   },

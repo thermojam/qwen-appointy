@@ -87,6 +87,14 @@ export function DateTimePicker({
   };
 
   const formatTime = (time: string) => {
+    // Handle ISO format (e.g., "2026-02-25T06:00:00.000Z")
+    if (time.includes('T')) {
+      const date = new Date(time);
+      const hours = date.getHours().toString().padStart(2, '0');
+      const minutes = date.getMinutes().toString().padStart(2, '0');
+      return `${hours}:${minutes}`;
+    }
+    // Handle HH:MM format
     const [hours, minutes] = time.split(':');
     return `${hours}:${minutes}`;
   };

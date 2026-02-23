@@ -14,6 +14,7 @@ export interface BookingWizardProps {
   masterName: string;
   services: Service[];
   availableSlots?: string[];
+  onDateSelect?: (date: Date) => void;
   onSubmit?: (data: BookingData) => void;
   onCancel?: () => void;
 }
@@ -32,6 +33,7 @@ export function BookingWizard({
   masterName,
   services,
   availableSlots = [],
+  onDateSelect,
   onSubmit,
   onCancel,
 }: BookingWizardProps) {
@@ -55,6 +57,10 @@ export function BookingWizard({
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
+    // Call parent callback to load slots
+    if (onDateSelect) {
+      onDateSelect(date);
+    }
   };
 
   const handleTimeSelect = (time: string) => {
@@ -82,8 +88,22 @@ export function BookingWizard({
   const handleSubmit = () => {
     if (selectedServiceId && selectedDate && selectedTime && onSubmit) {
       const dateTime = new Date(selectedDate);
-      const [hours, minutes] = selectedTime.split(':');
-      dateTime.setHours(parseInt(hours), parseInt(minutes));
+      
+      // Handle both ISO format and HH:MM format
+      let hours: number, minutes: number;
+      if (selectedTime.includes('T')) {
+        // ISO format: extract time from ISO string
+        const timeDate = new Date(selectedTime);
+        hours = timeDate.getHours();
+        minutes = timeDate.getMinutes();
+      } else {
+        // HH:MM format
+        const [h, m] = selectedTime.split(':');
+        hours = parseInt(h);
+        minutes = parseInt(m);
+      }
+      
+      dateTime.setHours(hours, minutes);
 
       onSubmit({
         masterId,

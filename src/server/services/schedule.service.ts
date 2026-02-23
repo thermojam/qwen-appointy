@@ -42,8 +42,11 @@ export const scheduleService = {
       if (data.breakStart >= data.breakEnd) {
         throw AppError.badRequest('Break start must be before break end');
       }
-      if (data.breakStart < data.startTime || data.breakEnd > data.endTime) {
-        throw AppError.badRequest('Break time must be within working hours');
+      if (data.breakStart < data.startTime) {
+        throw AppError.badRequest(`Break time (${data.breakStart}) cannot start before work (${data.startTime})`);
+      }
+      if (data.breakEnd > data.endTime) {
+        throw AppError.badRequest(`Break time (${data.breakEnd}) cannot end after work (${data.endTime})`);
       }
     }
 
@@ -172,9 +175,13 @@ export const scheduleService = {
     date: Date,
     serviceDuration: number
   ) {
+    console.log('[ScheduleService] getAvailableSlots:', { masterId, date, serviceDuration });
+    
     const dayOfWeekString = date.toLocaleDateString('en-US', {
       weekday: 'long',
     }).toUpperCase() as DayOfWeek;
+
+    console.log('[ScheduleService] Day of week:', dayOfWeekString);
 
     // Get schedule for this day
     const schedule = await prisma.schedule.findFirst({
@@ -184,6 +191,8 @@ export const scheduleService = {
         isActive: true,
       },
     });
+
+    console.log('[ScheduleService] Schedule:', schedule);
 
     if (!schedule) {
       return []; // No working hours on this day
@@ -273,7 +282,10 @@ export const scheduleService = {
       });
 
       if (!hasConflict) {
-        slots.push(currentTime.toISOString());
+        // Return time in HH:MM format
+        const hours = currentTime.getHours().toString().padStart(2, '0');
+        const minutes = currentTime.getMinutes().toString().padStart(2, '0');
+        slots.push(`${hours}:${minutes}`);
       }
 
       // Move to next 15-minute slot

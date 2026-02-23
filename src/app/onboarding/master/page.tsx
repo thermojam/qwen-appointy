@@ -14,10 +14,8 @@ export default function MasterOnboardingPage() {
       if (!isAuthenticated) {
         router.push('/sign-in');
       } else if (user?.role !== 'MASTER') {
-        // Если клиент, редиректим на его онбординг
         router.push('/onboarding/client');
       } else if (user?.master) {
-        // Если профиль уже заполнен, редиректим в дашборд
         router.push('/dashboard');
       }
     }
@@ -31,5 +29,5 @@ export default function MasterOnboardingPage() {
     );
   }
 
-  return <OnboardingWizard role="MASTER" />;
+  return <OnboardingWizard />;
 }

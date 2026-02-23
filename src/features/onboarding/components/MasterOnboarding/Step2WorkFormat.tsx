@@ -106,21 +106,6 @@ export function MasterStep2({ onNext, onBack }: MasterStep2Props) {
         </div>
       )}
 
-      {/* Онлайн платформа */}
-      {(master.workFormat === 'ONLINE' || master.workFormat === 'BOTH') && (
-        <div className="space-y-2">
-          <label htmlFor="onlinePlatform" className="text-sm font-medium">
-            Платформа для онлайн-консультаций
-          </label>
-          <Input
-            id="onlinePlatform"
-            value={master.onlinePlatform}
-            onChange={(e) => updateMasterData({ onlinePlatform: e.target.value })}
-            placeholder="Zoom, Skype, WhatsApp и т.д."
-          />
-        </div>
-      )}
-
       <div className="flex justify-between pt-4">
         <button
           type="button"

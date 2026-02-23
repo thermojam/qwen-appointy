@@ -68,7 +68,13 @@ function getAuthToken(): string | null {
   }
   try {
     const state = useAuthStore.getState();
-    return state?.accessToken || null;
+    const token = state?.accessToken || null;
+    if (!token) {
+      console.warn('[API] No auth token found in store');
+    } else {
+      console.log('[API] Using token:', token.substring(0, 20) + '...');
+    }
+    return token;
   } catch (error) {
     console.warn('Failed to get auth token from store:', error);
     return null;
@@ -183,8 +189,12 @@ export const api = {
         `/search/masters${queryString ? `?${queryString}` : ''}`
       );
     },
-    masterById: (id: string) =>
-      request<MasterProfile>(`/search/masters/${id}`),
+    masterById: (id: string) => {
+      if (!id || id === ':masterId') {
+        throw new Error('Invalid master ID');
+      }
+      return request<MasterProfile>(`/search/masters/${encodeURIComponent(id)}`);
+    },
   },
 
   // Appointments

@@ -113,8 +113,21 @@ export default function SchedulePage() {
     router.push('/');
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleCreateSchedule = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate break time is within working hours
+    if (newSchedule.breakStart && newSchedule.breakEnd) {
+      if (newSchedule.breakStart < newSchedule.startTime) {
+        alert(`Перерыв не может начинаться раньше начала работы (${newSchedule.startTime})`);
+        return;
+      }
+      if (newSchedule.breakEnd > newSchedule.endTime) {
+        alert(`Перерыв не может заканчиваться позже конца работы (${newSchedule.endTime})`);
+        return;
+      }
+    }
+    
     await createSchedule.mutateAsync(newSchedule);
   };
 
@@ -202,7 +215,7 @@ export default function SchedulePage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleCreateSchedule} className="space-y-4">
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">День недели</label>
@@ -311,7 +324,12 @@ export default function SchedulePage() {
                             breakStart: e.target.value,
                           })
                         }
+                        min={newSchedule.startTime}
+                        max={newSchedule.endTime}
                       />
+                      <p className="text-xs text-muted-foreground">
+                        Должен быть между {newSchedule.startTime} и {newSchedule.endTime}
+                      </p>
                     </div>
                     <div className="space-y-2">
                       <label htmlFor="breakEnd" className="text-sm font-medium">
@@ -327,7 +345,12 @@ export default function SchedulePage() {
                             breakEnd: e.target.value,
                           })
                         }
+                        min={newSchedule.breakStart || newSchedule.startTime}
+                        max={newSchedule.endTime}
                       />
+                      <p className="text-xs text-muted-foreground">
+                        Должен быть между началом перерыва и {newSchedule.endTime}
+                      </p>
                     </div>
                   </div>
                 </div>

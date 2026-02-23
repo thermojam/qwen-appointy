@@ -20,7 +20,7 @@ const AUTH_KEYS = {
  * Автоматически кэшируется и обновляется
  */
 export function useCurrentUser() {
-  const { setTokens, clearTokens } = useAuthStore();
+  const { clearTokens } = useAuthStore();
   const queryClient = useQueryClient();
 
   return useQuery({
@@ -28,9 +28,10 @@ export function useCurrentUser() {
     queryFn: async (): Promise<User> => {
       try {
         return await api.auth.me();
-      } catch (error: any) {
+      } catch (error) {
+        const apiError = error as { status?: number };
         // При ошибке 401 очищаем токены
-        if (error?.status === 401) {
+        if (apiError?.status === 401) {
           clearTokens();
           queryClient.setQueryData(AUTH_KEYS.user, null);
         }
@@ -129,8 +130,8 @@ export function useLogin() {
           }
         })
         .catch(() => {
-          // Ошибка получения пользователя - всё равно на онбординг
-          router.push('/onboarding');
+          // Ошибка получения пользователя - редирект на онбординг
+          router.push('/onboarding/client');
         });
     },
   });
