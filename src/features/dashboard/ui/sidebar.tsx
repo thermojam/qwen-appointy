@@ -3,8 +3,11 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/shared/api/client';
 import { cn } from '@/shared/lib/utils';
 import { Logo } from '@/shared/ui/logo';
+import { Badge } from '@/shared/ui/badge';
 import {
   Home,
   Calendar,
@@ -23,6 +26,7 @@ interface NavItem {
   href: string;
   label: string;
   icon: React.ElementType;
+  badge?: boolean;
 }
 
 const navItems: NavItem[] = [
@@ -30,7 +34,7 @@ const navItems: NavItem[] = [
   { href: '/dashboard/appointments', label: 'Записи', icon: Calendar },
   { href: '/dashboard/services', label: 'Услуги', icon: Briefcase },
   { href: '/dashboard/schedule', label: 'Расписание', icon: Clock },
-  { href: '/dashboard/notifications', label: 'Уведомления', icon: Bell },
+  { href: '/dashboard/notifications', label: 'Уведомления', icon: Bell, badge: true },
   { href: '/dashboard/gallery', label: 'Галерея', icon: ImageIcon },
   { href: '/dashboard/reviews', label: 'Отзывы', icon: Star },
   { href: '/dashboard/settings', label: 'Настройки', icon: Settings },
@@ -48,6 +52,15 @@ interface SidebarProps {
 export function Sidebar({ user, onLogout }: SidebarProps) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  // Получаем количество непрочитанных уведомлений
+  const { data: unreadCountData } = useQuery({
+    queryKey: ['notifications-unread-count'],
+    queryFn: () => api.notifications.getUnreadCount(),
+    refetchInterval: 30000, // Обновлять каждые 30 секунд
+  });
+
+  const unreadCount = unreadCountData?.count || 0;
 
   // На мобильных устройствах по умолчанию свёрнут
   useEffect(() => {
@@ -123,6 +136,7 @@ export function Sidebar({ user, onLogout }: SidebarProps) {
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
+          const showBadge = item.badge && unreadCount > 0;
 
           return (
             <Link
@@ -138,7 +152,32 @@ export function Sidebar({ user, onLogout }: SidebarProps) {
               title={isCollapsed ? item.label : undefined}
             >
               <Icon className={cn('w-5 h-5', isCollapsed ? '' : 'flex-shrink-0')} />
-              {!isCollapsed && <span className="truncate">{item.label}</span>}
+              {!isCollapsed && (
+                <>
+                  <span className="truncate flex-1">{item.label}</span>
+                  {showBadge && (
+                    <Badge
+                      variant="default"
+                      className={cn(
+                        'min-w-5 h-5 px-1 flex items-center justify-center text-xs',
+                        unreadCount > 99 && 'min-w-6'
+                      )}
+                    >
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </Badge>
+                  )}
+                </>
+              )}
+              {isCollapsed && showBadge && (
+                <div className="absolute top-2 right-2">
+                  <Badge
+                    variant="default"
+                    className="min-w-5 h-5 px-1 flex items-center justify-center text-xs"
+                  >
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </Badge>
+                </div>
+              )}
             </Link>
           );
         })}

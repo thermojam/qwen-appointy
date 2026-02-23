@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/shared/api/client';
 import { BookingWizard } from '@/shared/ui/booking-wizard';
 import { Button } from '@/shared/ui/button';
@@ -11,6 +11,7 @@ import { useState } from 'react';
 export default function BookPage() {
   const params = useParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const masterId = params.masterId as string;
   const serviceId = params.serviceId as string;
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -109,6 +110,14 @@ export default function BookPage() {
               try {
                 await api.appointments.createAppointment(data);
                 console.log('[BookPage] Appointment created successfully');
+                
+                // Инвалидируем кэши для обновления данных в реальном времени
+                queryClient.invalidateQueries({ queryKey: ['notifications'] });
+                queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
+                queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+                queryClient.invalidateQueries({ queryKey: ['dashboard-upcoming'] });
+                queryClient.invalidateQueries({ queryKey: ['client-appointments'] });
+                
                 router.push('/client');
               } catch (error) {
                 console.error('[BookPage] Failed to create appointment:', error);

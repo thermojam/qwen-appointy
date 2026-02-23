@@ -39,6 +39,7 @@ export default function ClientDashboardPage() {
         queryKey: ['client-appointments'],
         queryFn: () => api.appointments.getClientAppointments(),
         enabled: isAuthenticated && user?.role === 'CLIENT',
+        refetchInterval: 15000, // Обновлять каждые 15 секунд
     });
 
     // Fetch favorite masters - вызываем ДО любых условных возвратов
@@ -46,6 +47,7 @@ export default function ClientDashboardPage() {
         queryKey: ['client-favorites'],
         queryFn: () => api.favorites.getAll(),
         enabled: isAuthenticated && user?.role === 'CLIENT',
+        refetchInterval: 30000, // Обновлять каждые 30 секунд
     });
 
     // Redirect if not authenticated or not a client

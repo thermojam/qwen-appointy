@@ -33,12 +33,14 @@ export default function DashboardPage() {
     queryKey: ['dashboard-stats'],
     queryFn: () => api.dashboard.getStats(),
     enabled: !!currentUser,
+    refetchInterval: 30000, // Обновлять каждые 30 секунд
   });
 
   const { data: upcoming } = useQuery({
     queryKey: ['dashboard-upcoming'],
     queryFn: () => api.dashboard.getUpcoming(5),
     enabled: !!currentUser,
+    refetchInterval: 30000, // Обновлять каждые 30 секунд
   });
 
   useEffect(() => {

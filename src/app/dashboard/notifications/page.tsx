@@ -101,12 +101,14 @@ export default function NotificationsPage() {
       return api.notifications.getAll(filters);
     },
     enabled: !!currentUser,
+    refetchInterval: 10000, // Обновлять каждые 10 секунд для уведомлений
   });
 
   const { data: unreadCountData } = useQuery({
     queryKey: ['notifications-unread-count'],
     queryFn: () => api.notifications.getUnreadCount(),
     enabled: !!currentUser,
+    refetchInterval: 10000, // Обновлять каждые 10 секунд
   });
 
   const markAsRead = useMutation({
