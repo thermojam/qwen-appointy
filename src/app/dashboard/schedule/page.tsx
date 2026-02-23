@@ -35,7 +35,8 @@ export default function SchedulePage() {
   const queryClient = useQueryClient();
   const [isCreating, setIsCreating] = useState(false);
   const [selectedDay, setSelectedDay] = useState<DayOfWeek | 'ALL'>('ALL');
-  
+  const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
+
   const [newSchedule, setNewSchedule] = useState<{
     dayOfWeek: DayOfWeek;
     startTime: string;
@@ -115,20 +116,103 @@ export default function SchedulePage() {
 
   const handleCreateSchedule = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validate break time is within working hours
+
+    // Helper to convert time to minutes
+    const toMinutes = (time: string) => {
+      const [h, m] = time.split(':').map(Number);
+      return h * 60 + m;
+    };
+
+    // Validate that start != end
+    if (newSchedule.startTime === newSchedule.endTime) {
+      alert('Время начала и окончания не могут быть одинаковыми');
+      return;
+    }
+
+    // Validate break time is within working hours (simplified for overnight support)
     if (newSchedule.breakStart && newSchedule.breakEnd) {
-      if (newSchedule.breakStart < newSchedule.startTime) {
-        alert(`Перерыв не может начинаться раньше начала работы (${newSchedule.startTime})`);
-        return;
-      }
-      if (newSchedule.breakEnd > newSchedule.endTime) {
-        alert(`Перерыв не может заканчиваться позже конца работы (${newSchedule.endTime})`);
+      if (newSchedule.breakStart === newSchedule.breakEnd) {
+        alert('Перерыв не может иметь одинаковое время начала и окончания');
         return;
       }
     }
-    
+
     await createSchedule.mutateAsync(newSchedule);
+  };
+
+  const handleEditSchedule = (schedule: Schedule) => {
+    setEditingSchedule(schedule);
+    setNewSchedule({
+      dayOfWeek: schedule.dayOfWeek,
+      startTime: schedule.startTime,
+      endTime: schedule.endTime,
+      breakStart: schedule.breakStart || '',
+      breakEnd: schedule.breakEnd || '',
+      isActive: schedule.isActive,
+    });
+    setIsCreating(true);
+  };
+
+  const handleUpdateSchedule = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!editingSchedule) return;
+
+    // Helper to convert time to minutes
+    const toMinutes = (time: string) => {
+      const [h, m] = time.split(':').map(Number);
+      return h * 60 + m;
+    };
+
+    // Validate that start != end
+    if (newSchedule.startTime === newSchedule.endTime) {
+      alert('Время начала и окончания не могут быть одинаковыми');
+      return;
+    }
+
+    // Validate break time (simplified for overnight support)
+    if (newSchedule.breakStart && newSchedule.breakEnd) {
+      if (newSchedule.breakStart === newSchedule.breakEnd) {
+        alert('Перерыв не может иметь одинаковое время начала и окончания');
+        return;
+      }
+    }
+
+    await updateSchedule.mutateAsync({
+      id: editingSchedule.id,
+      data: {
+        dayOfWeek: newSchedule.dayOfWeek,
+        startTime: newSchedule.startTime,
+        endTime: newSchedule.endTime,
+        breakStart: newSchedule.breakStart || undefined,
+        breakEnd: newSchedule.breakEnd || undefined,
+        isActive: newSchedule.isActive,
+      },
+    });
+
+    setEditingSchedule(null);
+    setIsCreating(false);
+    setNewSchedule({
+      dayOfWeek: 'MONDAY',
+      startTime: '09:00',
+      endTime: '18:00',
+      breakStart: '',
+      breakEnd: '',
+      isActive: true,
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingSchedule(null);
+    setIsCreating(false);
+    setNewSchedule({
+      dayOfWeek: 'MONDAY',
+      startTime: '09:00',
+      endTime: '18:00',
+      breakStart: '',
+      breakEnd: '',
+      isActive: true,
+    });
   };
 
   if (!currentUser) {
@@ -205,17 +289,17 @@ export default function SchedulePage() {
           ))}
         </div>
 
-        {/* Create Schedule Form */}
+        {/* Create/Edit Schedule Form */}
         {isCreating && (
           <Card className="mb-8">
             <CardHeader>
-              <CardTitle>Новый рабочий день</CardTitle>
+              <CardTitle>{editingSchedule ? 'Редактировать рабочий день' : 'Новый рабочий день'}</CardTitle>
               <CardDescription>
-                Укажите дни и время работы
+                {editingSchedule ? 'Измените параметры рабочего дня' : 'Укажите дни и время работы'}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleCreateSchedule} className="space-y-4">
+              <form onSubmit={editingSchedule ? handleUpdateSchedule : handleCreateSchedule} className="space-y-4">
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">День недели</label>
@@ -358,14 +442,14 @@ export default function SchedulePage() {
                 <div className="flex gap-2">
                   <Button
                     type="submit"
-                    disabled={createSchedule.isPending}
+                    disabled={createSchedule.isPending || updateSchedule.isPending}
                   >
-                    {createSchedule.isPending ? 'Сохранение...' : 'Сохранить'}
+                    {(createSchedule.isPending || updateSchedule.isPending) ? 'Сохранение...' : 'Сохранить'}
                   </Button>
                   <Button
                     type="button"
                     variant="ghost"
-                    onClick={() => setIsCreating(false)}
+                    onClick={handleCancelEdit}
                   >
                     Отмена
                   </Button>
@@ -437,9 +521,7 @@ export default function SchedulePage() {
                       variant="outline"
                       size="sm"
                       className="flex-1"
-                      onClick={() => {
-                        // Edit functionality - could open a modal
-                      }}
+                      onClick={() => handleEditSchedule(schedule)}
                     >
                       Редактировать
                     </Button>

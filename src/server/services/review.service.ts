@@ -1,11 +1,19 @@
 import { prisma } from '../db/prisma';
 import { AppError } from '../utils/errors';
+import { notificationService } from './notification.service';
 
 interface GetReviewsFilters {
   minRating?: number;
   maxRating?: number;
   limit?: number;
   offset?: number;
+}
+
+interface CreateReviewInput {
+  masterId: string;
+  clientId: string;
+  rating: number;
+  comment?: string;
 }
 
 export const reviewService = {
@@ -63,6 +71,122 @@ export const reviewService = {
     }
 
     return review;
+  },
+
+  async createReview(data: CreateReviewInput) {
+    // Проверяем, что мастер существует
+    const master = await prisma.master.findUnique({
+      where: { id: data.masterId },
+    });
+
+    if (!master) {
+      throw AppError.notFound('Master not found');
+    }
+
+    // Проверяем, что клиент существует
+    const client = await prisma.client.findUnique({
+      where: { id: data.clientId },
+    });
+
+    if (!client) {
+      throw AppError.notFound('Client not found');
+    }
+
+    // Проверяем, есть ли уже отзыв от этого клиента этому мастеру
+    const existingReview = await prisma.review.findUnique({
+      where: {
+        masterId_clientId: {
+          masterId: data.masterId,
+          clientId: data.clientId,
+        },
+      },
+    });
+
+    if (existingReview) {
+      throw AppError.conflict('Вы уже оставляли отзыв этому мастеру. Вы можете обновить существующий отзыв.');
+    }
+
+    // Проверяем, что у клиента была завершённая запись к этому мастеру
+    const completedAppointment = await prisma.appointment.findFirst({
+      where: {
+        masterId: data.masterId,
+        clientId: data.clientId,
+        status: 'COMPLETED',
+      },
+    });
+
+    if (!completedAppointment) {
+      throw AppError.forbidden('Вы можете оставить отзыв только после завершения услуги. Дождитесь статуса "Завершено".');
+    }
+
+    // Создаём отзыв
+    const review = await prisma.review.create({
+      data: {
+        masterId: data.masterId,
+        clientId: data.clientId,
+        rating: data.rating,
+        comment: data.comment,
+      },
+      include: {
+        client: {
+          select: {
+            fullName: true,
+            avatarUrl: true,
+          },
+        },
+      },
+    });
+
+    // Обновляем рейтинг мастера
+    await this.updateMasterRating(data.masterId);
+
+    // Создаём уведомление для мастера
+    const clientName = client.fullName || 'Клиент';
+    await notificationService.notifyReviewReceived(
+      master.userId,
+      clientName,
+      data.rating
+    );
+
+    console.log('[ReviewService] Review created:', {
+      id: review.id,
+      masterId: data.masterId,
+      clientId: data.clientId,
+      rating: data.rating,
+    });
+
+    return review;
+  },
+
+  async updateReview(reviewId: string, data: { rating?: number; comment?: string }) {
+    const review = await prisma.review.findUnique({
+      where: { id: reviewId },
+    });
+
+    if (!review) {
+      throw AppError.notFound('Review not found');
+    }
+
+    const updated = await prisma.review.update({
+      where: { id: reviewId },
+      data: {
+        ...(data.rating !== undefined && { rating: data.rating }),
+        ...(data.comment !== undefined && { comment: data.comment }),
+      },
+      include: {
+        client: {
+          select: {
+            fullName: true,
+            avatarUrl: true,
+          },
+        },
+      },
+    });
+
+    // Обновляем рейтинг мастера
+    await this.updateMasterRating(review.masterId);
+
+    return updated;
   },
 
   async getReviewStats(masterId: string) {

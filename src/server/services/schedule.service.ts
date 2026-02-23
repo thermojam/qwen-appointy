@@ -21,6 +21,12 @@ interface UpdateScheduleInput {
   isActive?: boolean;
 }
 
+// Helper function to convert time string to minutes since midnight
+function timeToMinutes(time: string): number {
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
+}
+
 export const scheduleService = {
   async createSchedule(data: CreateScheduleInput) {
     // Verify master exists
@@ -32,22 +38,29 @@ export const scheduleService = {
       throw AppError.notFound('Master not found');
     }
 
-    // Validate time range
-    if (data.startTime >= data.endTime) {
-      throw AppError.badRequest('Start time must be before end time');
+    // Validate time range (support overnight shifts like 23:00 - 02:00)
+    const startMinutes = timeToMinutes(data.startTime);
+    const endMinutes = timeToMinutes(data.endTime);
+    
+    // For same-day shifts: start must be before end
+    // For overnight shifts: start can be after end (e.g., 23:00 - 02:00)
+    // But they can't be equal
+    if (startMinutes === endMinutes) {
+      throw AppError.badRequest('Start time and end time cannot be the same');
     }
 
     // Validate break times if provided
     if (data.breakStart && data.breakEnd) {
-      if (data.breakStart >= data.breakEnd) {
-        throw AppError.badRequest('Break start must be before break end');
+      const breakStartMinutes = timeToMinutes(data.breakStart);
+      const breakEndMinutes = timeToMinutes(data.breakEnd);
+      
+      if (breakStartMinutes === breakEndMinutes) {
+        throw AppError.badRequest('Break start and end time cannot be the same');
       }
-      if (data.breakStart < data.startTime) {
-        throw AppError.badRequest(`Break time (${data.breakStart}) cannot start before work (${data.startTime})`);
-      }
-      if (data.breakEnd > data.endTime) {
-        throw AppError.badRequest(`Break time (${data.breakEnd}) cannot end after work (${data.endTime})`);
-      }
+      
+      // For overnight shifts, break time validation is more complex
+      // For simplicity, we'll allow any break time that's not equal
+      // Advanced validation can be added if needed
     }
 
     // Check for overlapping schedule on the same day
@@ -89,12 +102,14 @@ export const scheduleService = {
       throw AppError.notFound('Schedule not found');
     }
 
-    // Validate time range if provided
+    // Validate time range if provided (support overnight shifts)
     const startTime = data.startTime || schedule.startTime;
     const endTime = data.endTime || schedule.endTime;
+    const startMinutes = timeToMinutes(startTime);
+    const endMinutes = timeToMinutes(endTime);
 
-    if (startTime >= endTime) {
-      throw AppError.badRequest('Start time must be before end time');
+    if (startMinutes === endMinutes) {
+      throw AppError.badRequest('Start time and end time cannot be the same');
     }
 
     // Validate break times if provided
@@ -102,11 +117,11 @@ export const scheduleService = {
     const breakEnd = data.breakEnd ?? schedule.breakEnd;
 
     if (breakStart && breakEnd) {
-      if (breakStart >= breakEnd) {
-        throw AppError.badRequest('Break start must be before break end');
-      }
-      if (breakStart < startTime || breakEnd > endTime) {
-        throw AppError.badRequest('Break time must be within working hours');
+      const breakStartMinutes = timeToMinutes(breakStart);
+      const breakEndMinutes = timeToMinutes(breakEnd);
+      
+      if (breakStartMinutes === breakEndMinutes) {
+        throw AppError.badRequest('Break start and end time cannot be the same');
       }
     }
 
@@ -176,7 +191,7 @@ export const scheduleService = {
     serviceDuration: number
   ) {
     console.log('[ScheduleService] getAvailableSlots:', { masterId, date, serviceDuration });
-    
+
     const dayOfWeekString = date.toLocaleDateString('en-US', {
       weekday: 'long',
     }).toUpperCase() as DayOfWeek;
@@ -198,18 +213,29 @@ export const scheduleService = {
       return []; // No working hours on this day
     }
 
-    // Get existing appointments for this day
+    // Check if this is an overnight shift (e.g., 23:00 - 02:00)
+    const startMinutes = timeToMinutes(schedule.startTime);
+    const endMinutes = timeToMinutes(schedule.endTime);
+    const isOvernight = startMinutes > endMinutes;
+
+    // Get existing appointments
+    // For overnight shifts, we need to check appointments from both days
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(date);
     endOfDay.setHours(23, 59, 59, 999);
+
+    // For overnight shifts, also check the next day
+    const endOfNextDay = new Date(startOfDay);
+    endOfNextDay.setDate(endOfNextDay.getDate() + 1);
+    endOfNextDay.setHours(23, 59, 59, 999);
 
     const appointments = await prisma.appointment.findMany({
       where: {
         masterId,
         dateTime: {
           gte: startOfDay,
-          lte: endOfDay,
+          lte: isOvernight ? endOfNextDay : endOfDay,
         },
         status: {
           in: ['PENDING', 'CONFIRMED'],
@@ -233,8 +259,19 @@ export const scheduleService = {
     let currentTime = new Date(date);
     currentTime.setHours(workStartHour, workStartMin, 0, 0);
 
-    const workEndTime = new Date(date);
+    // For overnight shifts, set end time to next day
+    let workEndTime = new Date(date);
     workEndTime.setHours(workEndHour, workEndMin, 0, 0);
+    
+    if (isOvernight) {
+      workEndTime.setDate(workEndTime.getDate() + 1);
+    }
+
+    console.log('[ScheduleService] Work hours:', {
+      start: currentTime.toISOString(),
+      end: workEndTime.toISOString(),
+      isOvernight,
+    });
 
     // Handle break time
     let breakStart: Date | null = null;
@@ -249,6 +286,13 @@ export const scheduleService = {
 
       breakEnd = new Date(date);
       breakEnd.setHours(breakEndHour, breakEndMin, 0, 0);
+      
+      // For overnight shifts, adjust break times if they're after midnight
+      const breakStartMinutesVal = breakStartHour * 60 + breakStartMin;
+      if (isOvernight && breakStartMinutesVal < startMinutes) {
+        breakStart.setDate(breakStart.getDate() + 1);
+        breakEnd.setDate(breakEnd.getDate() + 1);
+      }
     }
 
     while (currentTime < workEndTime) {

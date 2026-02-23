@@ -39,18 +39,20 @@ export default function ReviewsPage() {
   const { data: reviews, isLoading } = useQuery({
     queryKey: ['reviews', selectedRating],
     queryFn: () => {
-      const filters = selectedRating !== 'ALL' 
+      const filters = selectedRating !== 'ALL'
         ? { minRating: selectedRating, maxRating: selectedRating }
         : undefined;
       return api.reviews.getAll(filters);
     },
     enabled: !!currentUser,
+    refetchInterval: 15000, // Обновлять каждые 15 секунд
   });
 
   const { data: stats } = useQuery({
     queryKey: ['reviews-stats'],
     queryFn: () => api.reviews.getStats(),
     enabled: !!currentUser,
+    refetchInterval: 15000, // Обновлять каждые 15 секунд
   });
 
   const deleteReview = useMutation({

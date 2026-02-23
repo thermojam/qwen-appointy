@@ -19,6 +19,17 @@ const getReviewsQuerySchema = z.object({
   offset: z.string().transform((val) => parseInt(val, 10)).optional(),
 });
 
+const createReviewSchema = z.object({
+  masterId: z.string().uuid('Invalid master ID'),
+  rating: z.number().int().min(1).max(5, 'Рейтинг должен быть от 1 до 5'),
+  comment: z.string().max(1000, 'Комментарий не должен превышать 1000 символов').optional().or(z.literal('')),
+});
+
+const updateReviewSchema = z.object({
+  rating: z.number().int().min(1).max(5).optional(),
+  comment: z.string().max(1000).optional().or(z.literal('')),
+});
+
 // Get all reviews for current master
 router.get(
   '/',
@@ -70,6 +81,57 @@ router.get(
 
     const stats = await reviewService.getReviewStats(master.id);
     successResponse(res, stats);
+  })
+);
+
+// Create new review (CLIENT only)
+router.post(
+  '/',
+  authorize(UserRole.CLIENT),
+  asyncHandler(async (req, res) => {
+    const client = await prisma.client.findUnique({
+      where: { userId: req.user!.userId },
+    });
+
+    if (!client) {
+      throw AppError.notFound('Client profile not found');
+    }
+
+    const data = createReviewSchema.parse(req.body);
+
+    const review = await reviewService.createReview({
+      ...data,
+      clientId: client.id,
+    });
+
+    successResponse(res, review, 201);
+  })
+);
+
+// Update existing review (CLIENT only)
+router.patch(
+  '/:id',
+  authorize(UserRole.CLIENT),
+  asyncHandler(async (req, res) => {
+    const client = await prisma.client.findUnique({
+      where: { userId: req.user!.userId },
+    });
+
+    if (!client) {
+      throw AppError.notFound('Client profile not found');
+    }
+
+    const review = await reviewService.getReviewById(String(req.params.id));
+
+    // Проверяем, что клиент владеет отзывом
+    if (review.clientId !== client.id) {
+      throw AppError.forbidden('Access denied');
+    }
+
+    const data = updateReviewSchema.parse(req.body);
+
+    const updated = await reviewService.updateReview(review.id, data);
+    successResponse(res, updated);
   })
 );
 

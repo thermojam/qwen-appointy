@@ -21,6 +21,7 @@ export default function MasterProfilePage() {
     queryKey: ['master', masterId],
     queryFn: () => api.search.masterById(masterId),
     enabled: !!masterId,
+    refetchInterval: 10000, // Обновлять каждые 10 секунд (рейтинг и отзывы)
   });
 
   if (isLoading) {

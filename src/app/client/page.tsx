@@ -1,13 +1,15 @@
 'use client';
 
 import {useState, useEffect} from 'react';
-import {useQuery} from '@tanstack/react-query';
+import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {api} from '@/shared/api/client';
 import {useRouter} from 'next/navigation';
 import {Button} from '@/shared/ui/button';
 import {Card, CardContent} from '@/shared/ui/card';
 import {Avatar} from '@/shared/ui/avatar';
 import {Badge} from '@/shared/ui/badge';
+import {ReviewModal} from '@/shared/ui/review-modal';
+import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter} from '@/shared/ui/dialog';
 import {
     Calendar,
     Clock,
@@ -23,18 +25,81 @@ import {useAuth, useLogout} from '@/features/auth/hooks/auth.hooks';
 
 type Tab = 'appointments' | 'favorites' | 'history';
 
+interface ReviewData {
+  appointmentId?: string;
+  masterId: string;
+  masterName: string;
+}
+
 export default function ClientDashboardPage() {
     const router = useRouter();
+    const queryClient = useQueryClient();
     const {user, isAuthenticated, isLoading} = useAuth();
     const logout = useLogout();
     const [activeTab, setActiveTab] = useState<Tab>('appointments');
+    const [reviewModalOpen, setReviewModalOpen] = useState(false);
+    const [selectedReview, setSelectedReview] = useState<ReviewData | null>(null);
+    const [cancelModalOpen, setCancelModalOpen] = useState(false);
+    const [appointmentToCancel, setAppointmentToCancel] = useState<{id: string; masterName: string; dateTime: string} | null>(null);
 
     const handleLogout = async () => {
         await logout.mutateAsync();
         router.push('/');
     };
 
-    // Fetch client appointments - вызываем ДО любых условных возвратов
+    const handleOpenReviewModal = (masterId: string, masterName: string, appointmentId?: string) => {
+        setSelectedReview({ appointmentId, masterId, masterName });
+        setReviewModalOpen(true);
+    };
+
+    const handleSubmitReview = async (data: { rating: number; comment: string }) => {
+        if (!selectedReview) return;
+
+        console.log('[Client Dashboard] Submitting review:', { ...selectedReview, ...data });
+
+        try {
+          await api.reviews.create({
+            masterId: selectedReview.masterId,
+            rating: data.rating,
+            comment: data.comment,
+          });
+
+          console.log('[Client Dashboard] Review submitted successfully');
+
+          // Инвалидируем кэши для обновления данных
+          queryClient.invalidateQueries({ queryKey: ['reviews'] });
+          queryClient.invalidateQueries({ queryKey: ['reviews-stats'] });
+          queryClient.invalidateQueries({ queryKey: ['reviews-stats-sidebar'] }); // Сброс бейджа в sidebar
+          queryClient.invalidateQueries({ queryKey: ['master', selectedReview.masterId] });
+
+          // Бейдж в sidebar обновится в реальном времени (через 15 сек polling или сразу при клике)
+        } catch (error) {
+          console.error('Failed to submit review:', error);
+          // Модалка сама покажет inline-сообщение об ошибке
+        }
+    };
+
+    const handleOpenCancelModal = (id: string, masterName: string, dateTime: string) => {
+        setAppointmentToCancel({ id, masterName, dateTime });
+        setCancelModalOpen(true);
+    };
+
+    const handleCancelAppointment = async () => {
+        if (!appointmentToCancel) return;
+
+        try {
+            await api.appointments.cancelClientAppointment(appointmentToCancel.id);
+
+            // Инвалидируем кэш
+            queryClient.invalidateQueries({ queryKey: ['client-appointments'] });
+            setCancelModalOpen(false);
+            setAppointmentToCancel(null);
+        } catch (error) {
+            console.error('Failed to cancel appointment:', error);
+        }
+    };
+
+    // Fetch client appointment - вызываем ДО любых условных возвратов
     const {data: appointments, isLoading: appointmentsLoading} = useQuery({
         queryKey: ['client-appointments'],
         queryFn: () => api.appointments.getClientAppointments(),
@@ -50,19 +115,20 @@ export default function ClientDashboardPage() {
         refetchInterval: 30000, // Обновлять каждые 30 секунд
     });
 
+    // Объединяем все loading state в один
+    const isPageLoading = isLoading || (isAuthenticated && user?.role === 'CLIENT' && (appointmentsLoading || favoritesLoading));
+
     // Redirect if not authenticated or not a client
     useEffect(() => {
-        if (!isLoading) {
-            if (!isAuthenticated) {
-                router.push('/sign-in');
-            } else if (user?.role !== 'CLIENT') {
-                // If master, redirect to master dashboard
-                router.push('/dashboard');
-            }
+        if (!isLoading && !isAuthenticated) {
+            router.push('/sign-in');
+        } else if (!isLoading && user?.role !== 'CLIENT') {
+            // If master, redirect to master dashboard
+            router.push('/dashboard');
         }
     }, [isAuthenticated, isLoading, user, router]);
 
-    if (isLoading || !isAuthenticated) {
+    if (isPageLoading || !isAuthenticated) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"/>
@@ -284,6 +350,11 @@ export default function ClientDashboardPage() {
                                                         <Button
                                                             variant="destructive"
                                                             size="sm"
+                                                            onClick={() => handleOpenCancelModal(
+                                                                appointment.id,
+                                                                appointment.master?.fullName || 'Мастер',
+                                                                formatDateTime(appointment.dateTime)
+                                                            )}
                                                         >
                                                             Отменить
                                                         </Button>
@@ -422,11 +493,24 @@ export default function ClientDashboardPage() {
                                                     </div>
                                                 </div>
                                                 <div className="flex flex-col gap-2">
-                                                    {appointment.status === 'COMPLETED' && (
-                                                        <Button variant="outline" size="sm">
+                                                    {appointment.status === 'COMPLETED' ? (
+                                                        <Button
+                                                          variant="outline"
+                                                          size="sm"
+                                                          onClick={() => handleOpenReviewModal(
+                                                            appointment.masterId,
+                                                            appointment.master?.fullName || 'Мастер',
+                                                            appointment.id
+                                                          )}
+                                                        >
                                                             <Star className="w-4 h-4 mr-2"/>
                                                             Оставить отзыв
                                                         </Button>
+                                                    ) : (
+                                                        <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                                            <Clock className="w-3 h-3"/>
+                                                            <span>Отзыв доступен после завершения</span>
+                                                        </div>
                                                     )}
                                                 </div>
                                             </div>
@@ -453,6 +537,47 @@ export default function ClientDashboardPage() {
                     </div>
                 )}
             </main>
+
+            {/* Review Modal */}
+            {selectedReview && (
+              <ReviewModal
+                open={reviewModalOpen}
+                onOpenChange={setReviewModalOpen}
+                onSubmit={handleSubmitReview}
+                masterName={selectedReview.masterName}
+              />
+            )}
+
+            {/* Cancel Appointment Modal */}
+            {appointmentToCancel && (
+              <Dialog open={cancelModalOpen} onOpenChange={setCancelModalOpen}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Отменить запись</DialogTitle>
+                    <DialogDescription>
+                      Вы уверены, что хотите отменить запись к мастеру {appointmentToCancel.masterName} на {appointmentToCancel.dateTime}?
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setCancelModalOpen(false);
+                        setAppointmentToCancel(null);
+                      }}
+                    >
+                      Нет, оставить запись
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={handleCancelAppointment}
+                    >
+                      Да, отменить запись
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            )}
         </div>
     );
 }
