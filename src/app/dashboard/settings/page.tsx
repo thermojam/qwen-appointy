@@ -27,7 +27,7 @@ export default function SettingsPage() {
     const logout = useLogout();
     const currentUser = currentUserQuery.data;
 
-    const {data: settings, isLoading} = useQuery({
+    const {data: isLoading} = useQuery({
         queryKey: ['master-settings'],
         queryFn: () => api.masterSettings.get(),
         enabled: !!currentUser,

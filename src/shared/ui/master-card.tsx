@@ -5,6 +5,7 @@ import { cn } from '@/shared/lib/utils';
 import { MapPin, Star, Clock } from 'lucide-react';
 import { Avatar } from './avatar';
 import { Badge } from './badge';
+import { FavoriteButton } from '@/features/favorites';
 
 export interface MasterCardProps extends HTMLAttributes<HTMLDivElement> {
   id: string;
@@ -98,18 +99,23 @@ const MasterCard = forwardRef<HTMLDivElement, MasterCardProps>(
             className="shrink-0"
           />
           <div className="flex-1 min-w-0">
-            <h3 className="font-heading font-bold text-lg text-foreground truncate">
-              {fullName}
-            </h3>
-            <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-              <MapPin className="w-3 h-3" />
-              <span className="truncate">{formatWorkFormat(workFormat)}</span>
-            </div>
-            {address && (
-              <div className="flex items-center gap-1 mt-0.5 text-xs text-muted-foreground">
-                <span className="truncate">{address}</span>
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <h3 className="font-heading font-bold text-lg text-foreground truncate">
+                  {fullName}
+                </h3>
+                <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+                  <MapPin className="w-3 h-3" />
+                  <span className="truncate">{formatWorkFormat(workFormat)}</span>
+                </div>
+                {address && (
+                  <div className="flex items-center gap-1 mt-0.5 text-xs text-muted-foreground">
+                    <span className="truncate">{address}</span>
+                  </div>
+                )}
               </div>
-            )}
+              <FavoriteButton masterId={id} variant="icon" />
+            </div>
           </div>
         </div>
 

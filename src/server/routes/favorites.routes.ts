@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import { asyncHandler, successResponse } from '../middleware/errorHandler';
 import { AppError } from '../utils/errors';
-import { prisma } from '../db/prisma';
 import { authenticate } from '../middleware/auth';
 import { loadProfile, roleMiddleware } from '../middleware/role.middleware';
+import { favoriteService } from '../services/favorite.service';
 
 const router = Router();
 
@@ -17,20 +17,13 @@ router.get(
   roleMiddleware('CLIENT'),
   asyncHandler(async (req, res) => {
     const clientId = req.clientId!;
+    const { page, limit, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
 
-    const favorites = await prisma.favoriteMaster.findMany({
-      where: { clientId },
-      include: {
-        master: {
-          include: {
-            services: {
-              where: { isActive: true },
-              select: { id: true, name: true, price: true, duration: true },
-            },
-          },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
+    const favorites = await favoriteService.getFavorites(clientId, {
+      page: page ? Number(page) : 1,
+      limit: limit ? Number(limit) : 20,
+      sortBy: sortBy as 'createdAt' | 'rating' | 'name',
+      sortOrder: sortOrder as 'asc' | 'desc',
     });
 
     successResponse(res, favorites);
@@ -49,45 +42,7 @@ router.post(
       throw AppError.badRequest('masterId is required');
     }
 
-    // Check if master exists
-    const master = await prisma.master.findUnique({
-      where: { id: masterId },
-    });
-
-    if (!master) {
-      throw AppError.notFound('Master not found');
-    }
-
-    // Check if already favorited
-    const existing = await prisma.favoriteMaster.findUnique({
-      where: {
-        masterId_clientId: {
-          masterId,
-          clientId,
-        },
-      },
-    });
-
-    if (existing) {
-      throw AppError.conflict('Master already in favorites');
-    }
-
-    const favorite = await prisma.favoriteMaster.create({
-      data: {
-        masterId,
-        clientId,
-      },
-      include: {
-        master: {
-          include: {
-            services: {
-              where: { isActive: true },
-              select: { id: true, name: true, price: true, duration: true },
-            },
-          },
-        },
-      },
-    });
+    const favorite = await favoriteService.addToFavorites(clientId, masterId);
 
     successResponse(res, favorite);
   })
@@ -101,14 +56,7 @@ router.delete(
     const clientId = req.clientId!;
     const masterId = String(req.params.masterId);
 
-    await prisma.favoriteMaster.delete({
-      where: {
-        masterId_clientId: {
-          masterId,
-          clientId,
-        },
-      },
-    });
+    await favoriteService.removeFromFavorites(clientId, masterId);
 
     successResponse(res, { message: 'Removed from favorites' });
   })
@@ -122,16 +70,9 @@ router.get(
     const clientId = req.clientId!;
     const masterId = String(req.params.masterId);
 
-    const favorite = await prisma.favoriteMaster.findUnique({
-      where: {
-        masterId_clientId: {
-          masterId,
-          clientId,
-        },
-      },
-    });
+    const isFavorite = await favoriteService.isFavorite(clientId, masterId);
 
-    successResponse(res, { isFavorite: !!favorite });
+    successResponse(res, { isFavorite });
   })
 );
 

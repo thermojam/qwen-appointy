@@ -418,14 +418,20 @@ export const api = {
 
     // Favorites
     favorites: {
-        getAll: () =>
-            request<Array<{
-                id: string;
-                masterId: string;
-                clientId: string;
-                createdAt: string;
-                master: import('@/shared/types/api').MasterProfile;
-            }>>('/favorites'),
+        getAll: (params?: { page?: number; limit?: number }) => {
+            const queryString = params
+                ? new URLSearchParams(params as Record<string, string>).toString()
+                : '';
+            return request<{
+                data: import('@/shared/types/api').MasterProfile[];
+                pagination: {
+                    page: number;
+                    limit: number;
+                    total: number;
+                    totalPages: number;
+                };
+            }>(`/favorites${queryString ? `?${queryString}` : ''}`);
+        },
         add: (masterId: string) =>
             request<{
                 id: string;

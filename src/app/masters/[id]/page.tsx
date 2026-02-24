@@ -9,6 +9,7 @@ import { Badge } from '@/shared/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/ui/card';
 import { Star, MapPin, Clock, Calendar, ChevronLeft, Briefcase } from 'lucide-react';
 import { useState } from 'react';
+import { FavoriteButton } from '@/features/favorites';
 
 export default function MasterProfilePage() {
   const params = useParams();
@@ -127,12 +128,15 @@ export default function MasterProfilePage() {
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 bg-warning-background px-4 py-2 rounded-full">
-                    <Star className="w-5 h-5 fill-warning text-warning" />
-                    <span className="font-bold text-lg">{master.rating.toFixed(1)}</span>
-                    <span className="text-sm text-muted-foreground">
-                      ({master.totalReviews} отзывов)
-                    </span>
+                  <div className="flex items-center gap-3">
+                    <FavoriteButton masterId={masterId} variant="icon" />
+                    <div className="flex items-center gap-2 bg-warning-background px-4 py-2 rounded-full">
+                      <Star className="w-5 h-5 fill-warning text-warning" />
+                      <span className="font-bold text-lg">{master.rating.toFixed(1)}</span>
+                      <span className="text-sm text-muted-foreground">
+                        ({master.totalReviews} отзывов)
+                      </span>
+                    </div>
                   </div>
                 </div>
 

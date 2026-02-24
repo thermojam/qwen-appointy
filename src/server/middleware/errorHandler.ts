@@ -1,58 +1,58 @@
-import { Request, Response, NextFunction } from 'express';
-import { ApiResponse } from '../types';
-import { AppError } from '../utils/errors';
+import {Request, Response, NextFunction} from 'express';
+import {ApiResponse} from '../types';
+import {AppError} from '../utils/errors';
 
 export const asyncHandler = (
-  fn: (req: Request, res: Response, next: NextFunction) => Promise<void>
+    fn: (req: Request, res: Response, next: NextFunction) => Promise<void>
 ) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
-  };
+    return (req: Request, res: Response, next: NextFunction) => {
+        Promise.resolve(fn(req, res, next)).catch(next);
+    };
 };
 
 export const successResponse = <T>(res: Response, data: T, statusCode: number = 200) => {
-  return res.status(statusCode).json({
-    success: true,
-    data,
-  } as ApiResponse<T>);
+    return res.status(statusCode).json({
+        success: true,
+        data,
+    } as ApiResponse<T>);
 };
 
 export const errorResponse = (
-  res: Response,
-  error: AppError | Error,
-  defaultStatus: number = 500
+    res: Response,
+    error: AppError | Error,
+    defaultStatus: number = 500
 ) => {
-  if (error instanceof AppError) {
-    return res.status(error.statusCode).json({
-      success: false,
-      error: error.message,
-      code: error.code,
-    } as ApiResponse);
-  }
+    if (error instanceof AppError) {
+        return res.status(error.statusCode).json({
+            success: false,
+            error: error.message,
+            code: error.code,
+        } as ApiResponse);
+    }
 
-  return res.status(defaultStatus).json({
-    success: false,
-    error: error.message || 'Internal Server Error',
-    code: 'INTERNAL_ERROR',
-  } as ApiResponse);
+    return res.status(defaultStatus).json({
+        success: false,
+        error: error.message || 'Internal Server Error',
+        code: 'INTERNAL_ERROR',
+    } as ApiResponse);
 };
 
 export const globalErrorHandler = (
-  err: Error | AppError,
-  req: Request,
-  res: Response,
-  next: NextFunction
+    err: Error | AppError,
+    req: Request,
+    res: Response,
+    next: NextFunction
 ) => {
-  // Расширенное логирование для отладки
-  console.error('[Global Error Handler]:', {
-    error: err.message,
-    stack: err.stack,
-    path: req.path,
-    method: req.method,
-    body: req.body,
-    query: req.query,
-    params: req.params,
-  });
-  
-  errorResponse(res, err);
+    // Расширенное логирование для отладки
+    console.error('[Global Error Handler]:', {
+        error: err.message,
+        stack: err.stack,
+        path: req.path,
+        method: req.method,
+        body: req.body,
+        query: req.query,
+        params: req.params,
+    });
+
+    errorResponse(res, err);
 };

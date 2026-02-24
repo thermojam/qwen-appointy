@@ -22,6 +22,7 @@ import {
     LogOut
 } from 'lucide-react';
 import {useAuth, useLogout} from '@/features/auth/hooks/auth.hooks';
+import {FavoriteCard, EmptyFavorites} from '@/features/favorites';
 
 type Tab = 'appointments' | 'favorites' | 'history';
 
@@ -107,10 +108,14 @@ export default function ClientDashboardPage() {
         refetchInterval: 15000, // Обновлять каждые 15 секунд
     });
 
-    // Fetch favorite masters - вызываем ДО любых условных возвратов
+    // Fetch favorite masters - используем единый ключ ['favorites'] для синхронизации
     const {data: favorites, isLoading: favoritesLoading} = useQuery({
-        queryKey: ['client-favorites'],
-        queryFn: () => api.favorites.getAll(),
+        queryKey: ['favorites'],
+        queryFn: async () => {
+            const response = await api.favorites.getAll();
+            // response — это { data: Master[], pagination: {...} }
+            return response.data;
+        },
         enabled: isAuthenticated && user?.role === 'CLIENT',
         refetchInterval: 30000, // Обновлять каждые 30 секунд
     });
@@ -396,56 +401,41 @@ export default function ClientDashboardPage() {
                                     className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"/>
                             </div>
                         ) : favorites && favorites.length > 0 ? (
-                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {favorites.map((fav) => (
-                                    <Card
-                                        key={fav.id}
-                                        className="card-hover cursor-pointer"
-                                        onClick={() => router.push(`/masters/${fav.masterId}`)}
-                                    >
-                                        <CardContent className="pt-6">
-                                            <div className="flex items-start gap-4">
-                                                <Avatar
-                                                    src={fav.master?.avatarUrl}
-                                                    fallback={fav.master?.fullName?.charAt(0) || 'M'}
-                                                    size="lg"
-                                                />
-                                                <div className="flex-1">
-                                                    <h3 className="font-heading font-semibold">
-                                                        {fav.master?.fullName}
-                                                    </h3>
-                                                    <div
-                                                        className="flex items-center gap-1 mt-1 text-sm text-muted-foreground">
-                                                        <Star className="w-3 h-3 fill-warning text-warning"/>
-                                                        <span>{fav.master?.rating?.toFixed(1) || '0.0'}</span>
-                                                    </div>
-                                                    <div
-                                                        className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-                                                        <MapPin className="w-3 h-3"/>
-                                                        <span>{fav.master?.workFormat}</span>
-                                                    </div>
-                                                </div>
-                                                <ChevronRight className="w-5 h-5 text-muted-foreground"/>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
+                                    <div key={fav.id} className="relative group/card">
+                                        <FavoriteCard
+                                            master={fav}
+                                            onClick={() => router.push(`/masters/${fav.id}`)}
+                                        />
+                                        {/* Кнопка удаления с оптимистичным обновлением */}
+                                        <div className="absolute -top-2 -right-2 z-10 opacity-0 group-hover/card:opacity-100 transition-opacity">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    // Оптимистичное обновление
+                                                    const newFavorites = favorites.filter(m => m.id !== fav.id);
+                                                    queryClient.setQueryData(['favorites'], newFavorites);
+
+                                                    api.favorites.remove(fav.id)
+                                                        .catch(() => {
+                                                            // Откат при ошибке
+                                                            queryClient.setQueryData(['favorites'], favorites);
+                                                        });
+                                                }}
+                                                className="h-8 w-8 bg-background text-destructive hover:text-destructive hover:bg-destructive/10 shadow-md"
+                                                title="Удалить из избранного"
+                                            >
+                                                <Heart className="w-4 h-4" fill="currentColor" />
+                                            </Button>
+                                        </div>
+                                    </div>
                                 ))}
                             </div>
                         ) : (
-                            <Card>
-                                <CardContent className="py-16 text-center">
-                                    <Heart className="w-16 h-16 text-muted-foreground mx-auto mb-4"/>
-                                    <h3 className="font-heading font-semibold text-lg mb-2">
-                                        Нет избранных мастеров
-                                    </h3>
-                                    <p className="text-muted-foreground mb-4">
-                                        Добавьте мастеров в избранное для быстрого доступа
-                                    </p>
-                                    <Button onClick={() => router.push('/search')}>
-                                        Найти мастера
-                                    </Button>
-                                </CardContent>
-                            </Card>
+                            <EmptyFavorites />
                         )}
                     </div>
                 )}

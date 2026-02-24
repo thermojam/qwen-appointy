@@ -3,7 +3,7 @@
 import {useState} from 'react';
 import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
 import {api} from '@/shared/api/client';
-import type {Notification, NotificationType} from '@/shared/types/api';
+import type {NotificationType} from '@/shared/types/api';
 import {Sidebar} from '@/features/dashboard/ui/sidebar';
 import {useCurrentUser, useLogout} from '@/features/auth/hooks/auth.hooks';
 import {Card, CardContent} from '@/shared/ui/card';
@@ -16,7 +16,6 @@ import {
     Trash2,
     Calendar,
     Star,
-    AlertCircle,
     Info,
     X,
 } from 'lucide-react';
