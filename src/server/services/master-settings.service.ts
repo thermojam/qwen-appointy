@@ -1,9 +1,10 @@
 import { prisma } from '../db/prisma';
 import { AppError } from '../utils/errors';
-import { WorkFormat } from '@prisma/client';
+import { WorkFormat, OfflineMode } from '@prisma/client';
 
 interface UpdateMasterSettingsInput {
   workFormat?: WorkFormat;
+  offlineMode?: OfflineMode;
   address?: string;
   latitude?: number;
   longitude?: number;

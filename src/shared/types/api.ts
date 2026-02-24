@@ -44,6 +44,7 @@ export interface LoginInput {
 
 // Master
 export type WorkFormat = 'ONLINE' | 'OFFLINE' | 'BOTH';
+export type OfflineMode = 'AT_MY_PLACE' | 'AT_CLIENT_PLACE';
 
 export interface MasterProfile {
   id: string;
@@ -52,6 +53,7 @@ export interface MasterProfile {
   fullName: string;
   description?: string | null;
   workFormat: WorkFormat;
+  offlineMode?: OfflineMode | null;
   address?: string | null;
   latitude?: number | null;
   longitude?: number | null;
@@ -76,6 +78,7 @@ export interface MasterOnboardingInput {
   avatarUrl?: string;
   description?: string;
   workFormat: WorkFormat;
+  offlineMode?: OfflineMode;
   address?: string;
   latitude?: number;
   longitude?: number;
