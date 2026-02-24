@@ -37,6 +37,25 @@ class ApiError extends Error {
     }
 }
 
+// Флаг для предотвращения множественных refresh запросов
+let isRefreshing = false;
+// Очередь запросов, ожидающих refresh
+let failedQueue: Array<{
+    resolve: () => void;
+    reject: (error: Error) => void;
+}> = [];
+
+const processQueue = (error: Error | null = null) => {
+    failedQueue.forEach((prom) => {
+        if (error) {
+            prom.reject(error);
+        } else {
+            prom.resolve();
+        }
+    });
+    failedQueue = [];
+};
+
 async function handleResponse<T>(response: Response): Promise<T> {
     const data = await response.json();
 
@@ -82,6 +101,58 @@ function getAuthToken(): string | null {
     }
 }
 
+/**
+ * Получает refresh токен из store
+ */
+function getRefreshToken(): string | null {
+    if (typeof window === 'undefined') {
+        return null;
+    }
+    try {
+        const state = useAuthStore.getState();
+        return state?.refreshToken || null;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Обновляет access токен используя refresh токен
+ */
+async function refreshAuthToken(): Promise<string> {
+    const refreshToken = getRefreshToken();
+    
+    if (!refreshToken) {
+        throw new ApiError(401, 'NO_REFRESH_TOKEN', 'Refresh token not found');
+    }
+
+    const response = await fetch(`${API_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ refreshToken }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+        // Refresh token тоже истёк - очищаем всё
+        useAuthStore.getState().clearTokens();
+        throw new ApiError(
+            response.status,
+            data.code || 'REFRESH_FAILED',
+            data.error || 'Failed to refresh token'
+        );
+    }
+
+    // Сохраняем новые токены
+    const { accessToken, refreshToken: newRefreshToken } = data.data;
+    useAuthStore.getState().setTokens(accessToken, newRefreshToken);
+    
+    return accessToken;
+}
+
 async function request<T>(
     endpoint: string,
     options: RequestInit = {}
@@ -110,6 +181,59 @@ async function request<T>(
             'NETWORK_ERROR',
             'Сервер недоступен. Убедитесь, что backend запущен на порту 3001.'
         );
+    }
+
+    // Если получили 401 и токен ещё не обновляем - пробуем refresh
+    if (response.status === 401 && !isRefreshing) {
+        isRefreshing = true;
+        
+        try {
+            const newToken = await refreshAuthToken();
+            
+            // Повторяем оригинальный запрос с новым токеном
+            const retryResponse = await fetch(url, {
+                ...options,
+                headers: {
+                    ...headers,
+                    Authorization: `Bearer ${newToken}`,
+                },
+            });
+            
+            processQueue();
+            return handleResponse<T>(retryResponse);
+        } catch (refreshError) {
+            processQueue(refreshError as Error);
+            throw refreshError;
+        } finally {
+            isRefreshing = false;
+        }
+    }
+
+    // Если уже идёт refresh - добавляем запрос в очередь
+    if (response.status === 401 && isRefreshing) {
+        return new Promise((resolve, reject) => {
+            failedQueue.push({
+                resolve: () => {
+                    // Повторяем запрос после успешного refresh
+                    const token = getAuthToken();
+                    fetch(url, {
+                        ...options,
+                        headers: {
+                            ...headers,
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }).then(async (retryResponse) => {
+                        try {
+                            const data = await handleResponse<T>(retryResponse);
+                            resolve(data);
+                        } catch (error) {
+                            reject(error as Error);
+                        }
+                    }).catch(reject);
+                },
+                reject,
+            });
+        });
     }
 
     return handleResponse<T>(response);

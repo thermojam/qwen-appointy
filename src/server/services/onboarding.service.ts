@@ -1,6 +1,6 @@
 import { prisma } from '../db/prisma';
 import { AppError } from '../utils/errors';
-import { WorkFormat } from '@prisma/client';
+import { WorkFormat, OfflineMode } from '@prisma/client';
 
 interface MasterOnboardingInput {
   userId: string;
@@ -8,6 +8,7 @@ interface MasterOnboardingInput {
   avatarUrl?: string;
   description?: string;
   workFormat: WorkFormat;
+  offlineMode?: OfflineMode;
   address?: string;
   latitude?: number;
   longitude?: number;
@@ -56,6 +57,7 @@ export const onboardingService = {
         avatarUrl: data.avatarUrl,
         description: data.description,
         workFormat: data.workFormat,
+        offlineMode: data.offlineMode,
         address: data.address,
         latitude: data.latitude,
         longitude: data.longitude,

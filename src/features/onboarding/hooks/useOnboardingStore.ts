@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { WorkFormat, DayOfWeek } from '@prisma/client';
+import { WorkFormat, DayOfWeek, OfflineMode } from '@prisma/client';
 
 export interface ScheduleDay {
   dayOfWeek: DayOfWeek;
@@ -19,6 +19,7 @@ interface MasterOnboardingData {
 
   // Step 2
   workFormat: WorkFormat;
+  offlineMode?: OfflineMode;
   address: string;
   latitude?: number;
   longitude?: number;
@@ -97,6 +98,7 @@ export const useOnboardingStore = create<OnboardingState>()(
         avatarUrl: '',
         experienceYears: 0,
         workFormat: 'BOTH',
+        offlineMode: undefined,
         address: '',
         latitude: undefined,
         longitude: undefined,
@@ -164,6 +166,7 @@ export const useOnboardingStore = create<OnboardingState>()(
             avatarUrl: '',
             experienceYears: 0,
             workFormat: 'BOTH',
+            offlineMode: undefined,
             address: '',
             latitude: undefined,
             longitude: undefined,

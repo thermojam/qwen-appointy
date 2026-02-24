@@ -9,10 +9,15 @@ import {Input} from '@/shared/ui/input';
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '@/shared/ui/card';
 import {useRouter} from 'next/navigation';
 import {cn} from '@/shared/lib/utils';
+import {Sidebar} from '@/features/dashboard/ui/sidebar';
+import {useCurrentUser, useLogout} from '@/features/auth/hooks/auth.hooks';
+import {useEffect} from 'react';
 
 export default function ServicesPage() {
     const router = useRouter();
     const queryClient = useQueryClient();
+    const {data: user} = useCurrentUser();
+    const logout = useLogout();
     const [isCreating, setIsCreating] = useState(false);
     const [editingService, setEditingService] = useState<Service | null>(null);
     const [formData, setFormData] = useState<CreateServiceInput | UpdateServiceInput>({
@@ -87,8 +92,23 @@ export default function ServicesPage() {
         setFormData({name: '', description: '', duration: 60, price: 0});
     };
 
+    const handleLogout = async () => {
+        await logout.mutateAsync();
+        router.push('/');
+    };
+
     return (
         <div className="min-h-screen bg-background">
+            {/* Sidebar */}
+            <Sidebar 
+                user={user?.master || user?.client ? {
+                    fullName: user.master?.fullName || user.client?.fullName,
+                    email: user.email,
+                    avatar: user.master?.avatarUrl || user.client?.avatarUrl,
+                } : undefined}
+                onLogout={handleLogout}
+            />
+
             {/* Header */}
             <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                 <div className="container mx-auto px-4 py-4 flex items-center justify-between">

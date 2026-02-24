@@ -72,6 +72,11 @@ enum WorkFormat {
   BOTH
 }
 
+enum OfflineMode {
+  AT_MY_PLACE
+  AT_CLIENT_PLACE
+}
+
 model Master {
   id                          String    @id @default(uuid())
   userId                      String    @unique
@@ -79,6 +84,7 @@ model Master {
   fullName                    String
   description                 String?
   workFormat                  WorkFormat @default(BOTH)
+  offlineMode                 OfflineMode?
   address                     String?
   latitude                    Float?
   longitude                   Float?

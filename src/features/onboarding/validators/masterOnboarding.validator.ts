@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { WorkFormat, DayOfWeek } from '@prisma/client';
+import { WorkFormat, DayOfWeek, OfflineMode } from '@prisma/client';
 
 // Шаг 1: Базовая информация
 export const masterStep1Schema = z.object({
@@ -11,16 +11,27 @@ export const masterStep1Schema = z.object({
 // Шаг 2: Формат работы и локация
 export const masterStep2Schema = z.object({
   workFormat: z.nativeEnum(WorkFormat),
+  offlineMode: z.nativeEnum(OfflineMode).optional(),
   address: z.string().min(5, 'Укажите адрес').optional().or(z.literal('')),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
 }).refine((data) => {
-  if (data.workFormat === 'OFFLINE' || data.workFormat === 'BOTH') {
+  // Для OFFLINE с режимом AT_MY_PLACE требуется адрес
+  if (data.workFormat === 'OFFLINE' && data.offlineMode === 'AT_MY_PLACE') {
     return !!data.address;
   }
+  // Для OFFLINE с режимом AT_CLIENT_PLACE адрес не требуется
+  if (data.workFormat === 'OFFLINE' && data.offlineMode === 'AT_CLIENT_PLACE') {
+    return true;
+  }
+  // Для BOTH требуется адрес
+  if (data.workFormat === 'BOTH') {
+    return !!data.address;
+  }
+  // Для ONLINE адрес не требуется
   return true;
 }, {
-  message: 'Укажите адрес для офлайн-работы',
+  message: 'Укажите адрес для работы на своём месте',
   path: ['address'],
 });
 
