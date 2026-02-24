@@ -47,7 +47,7 @@ export function middleware(request: NextRequest) {
             const parsed = JSON.parse(authTokens.value);
             userRole = parsed.state?.user?.role;
         } catch {
-            // Игнорируем ошибки парсинга
+
         }
     }
 
@@ -108,14 +108,7 @@ export function middleware(request: NextRequest) {
 
 export const config = {
     matcher: [
-        /*
-         * Match all request paths except for the ones starting with:
-         * - api (API routes)
-         * - _next/static (static files)
-         * - _next/image (image optimization files)
-         * - favicon.ico (favicon file)
-         * - public files (public folder)
-         */
+
         '/((?!api|_next/static|_next/image|favicon.ico|.*\\..*|_next).*)',
     ],
 };
