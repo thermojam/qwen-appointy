@@ -2,9 +2,10 @@
 
 import {useState, useEffect} from 'react';
 import Link from 'next/link';
-import {usePathname} from 'next/navigation';
+import {usePathname, useRouter} from 'next/navigation';
 import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
 import {api} from '@/shared/api/client';
+import {useLogout} from '@/features/auth/hooks/auth.hooks';
 import {cn} from '@/shared/lib/utils';
 import {Logo} from '@/shared/ui/logo';
 import {Badge} from '@/shared/ui/badge';
@@ -47,13 +48,19 @@ interface SidebarProps {
         email: string;
         avatar?: string | null;
     };
-    onLogout?: () => void;
 }
 
-export function Sidebar({user, onLogout}: SidebarProps) {
+export function Sidebar({user}: SidebarProps) {
     const pathname = usePathname();
+    const router = useRouter();
     const [isCollapsed, setIsCollapsed] = useState(false);
     const queryClient = useQueryClient();
+    const logout = useLogout();
+
+    const handleLogout = async () => {
+        await logout.mutateAsync();
+        router.push('/');
+    };
 
     const {data: unreadCountData} = useQuery({
         queryKey: ['notifications-unread-count'],
@@ -279,7 +286,7 @@ export function Sidebar({user, onLogout}: SidebarProps) {
                                     </p>
                                 </div>
                                 <button
-                                    onClick={onLogout}
+                                    onClick={handleLogout}
                                     className="p-2 rounded-lg hover:bg-secondary transition-colors"
                                     title="Выйти"
                                 >
@@ -289,7 +296,7 @@ export function Sidebar({user, onLogout}: SidebarProps) {
                         )}
                         {isCollapsed && (
                             <button
-                                onClick={onLogout}
+                                onClick={handleLogout}
                                 className="p-2 rounded-lg hover:bg-secondary transition-colors"
                                 title="Выйти"
                             >

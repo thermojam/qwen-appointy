@@ -4,10 +4,9 @@ import {useState} from 'react';
 import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
 import {api} from '@/shared/api/client';
 import {Sidebar} from '@/features/dashboard/ui/sidebar';
-import {useCurrentUser, useLogout} from '@/features/auth/hooks/auth.hooks';
+import {useCurrentUser} from '@/features/auth/hooks/auth.hooks';
 import {Card, CardContent} from '@/shared/ui/card';
 import {Button} from '@/shared/ui/button';
-import {useRouter} from 'next/navigation';
 import {
     Star,
     Trash2,
@@ -28,12 +27,10 @@ const ratingFilters: Array<{ value: number | 'ALL'; label: string }> = [
 ];
 
 export default function ReviewsPage() {
-    const router = useRouter();
     const queryClient = useQueryClient();
     const [selectedRating, setSelectedRating] = useState<number | 'ALL'>('ALL');
 
     const currentUserQuery = useCurrentUser();
-    const logout = useLogout();
     const currentUser = currentUserQuery.data;
 
     const {data: reviews, isLoading} = useQuery({
@@ -62,11 +59,6 @@ export default function ReviewsPage() {
             queryClient.invalidateQueries({queryKey: ['reviews-stats']});
         },
     });
-
-    const handleLogout = async () => {
-        await logout.mutateAsync();
-        router.push('/');
-    };
 
     if (!currentUser) {
         return (
@@ -117,7 +109,6 @@ export default function ReviewsPage() {
                     email: user.email,
                     avatar: masterData?.avatarUrl,
                 }}
-                onLogout={handleLogout}
             />
 
             {/* Main Content */}

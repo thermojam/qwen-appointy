@@ -5,10 +5,9 @@ import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
 import {api} from '@/shared/api/client';
 import type {NotificationType} from '@/shared/types/api';
 import {Sidebar} from '@/features/dashboard/ui/sidebar';
-import {useCurrentUser, useLogout} from '@/features/auth/hooks/auth.hooks';
+import {useCurrentUser} from '@/features/auth/hooks/auth.hooks';
 import {Card, CardContent} from '@/shared/ui/card';
 import {Button} from '@/shared/ui/button';
-import {useRouter} from 'next/navigation';
 import {
     Bell,
     Check,
@@ -78,13 +77,11 @@ const typeFilters: Array<{ value: NotificationType | 'ALL'; label: string }> = [
 ];
 
 export default function NotificationsPage() {
-    const router = useRouter();
     const queryClient = useQueryClient();
     const [selectedType, setSelectedType] = useState<NotificationType | 'ALL'>('ALL');
     const [showOnlyUnread, setShowOnlyUnread] = useState(false);
 
     const currentUserQuery = useCurrentUser();
-    const logout = useLogout();
     const currentUser = currentUserQuery.data;
 
     const {data: notifications, isLoading} = useQuery({
@@ -142,11 +139,6 @@ export default function NotificationsPage() {
         },
     });
 
-    const handleLogout = async () => {
-        await logout.mutateAsync();
-        router.push('/');
-    };
-
     if (!currentUser) {
         return (
             <div className="min-h-screen flex items-center justify-center">
@@ -195,7 +187,6 @@ export default function NotificationsPage() {
                     email: user.email,
                     avatar: masterData?.avatarUrl,
                 }}
-                onLogout={handleLogout}
             />
 
             {/* Main Content */}

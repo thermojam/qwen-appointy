@@ -5,11 +5,10 @@ import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
 import {api} from '@/shared/api/client';
 import type {PortfolioWork} from '@/shared/types/api';
 import {Sidebar} from '@/features/dashboard/ui/sidebar';
-import {useCurrentUser, useLogout} from '@/features/auth/hooks/auth.hooks';
+import {useCurrentUser} from '@/features/auth/hooks/auth.hooks';
 import {Card, CardContent} from '@/shared/ui/card';
 import {Button} from '@/shared/ui/button';
 import {Input} from '@/shared/ui/input';
-import {useRouter} from 'next/navigation';
 import {
     Image as ImageIcon,
     Plus,
@@ -21,7 +20,6 @@ import {
 import {cn} from '@/shared/lib/utils';
 
 export default function GalleryPage() {
-    const router = useRouter();
     const queryClient = useQueryClient();
     const [isAdding, setIsAdding] = useState(false);
     const [selectedImage, setSelectedImage] = useState<PortfolioWork | null>(null);
@@ -33,7 +31,6 @@ export default function GalleryPage() {
     });
 
     const currentUserQuery = useCurrentUser();
-    const logout = useLogout();
     const currentUser = currentUserQuery.data;
 
     const {data: portfolio, isLoading} = useQuery({
@@ -64,11 +61,6 @@ export default function GalleryPage() {
         },
     });
 
-    const handleLogout = async () => {
-        await logout.mutateAsync();
-        router.push('/');
-    };
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newImage.imageUrl) return;
@@ -95,7 +87,6 @@ export default function GalleryPage() {
                     email: user.email,
                     avatar: masterData?.avatarUrl,
                 }}
-                onLogout={handleLogout}
             />
 
             {/* Main Content */}

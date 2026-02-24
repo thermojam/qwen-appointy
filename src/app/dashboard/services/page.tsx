@@ -8,18 +8,17 @@ import {Button} from '@/shared/ui/button';
 import {Input} from '@/shared/ui/input';
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '@/shared/ui/card';
 import {Badge} from '@/shared/ui/badge';
-import {useRouter} from 'next/navigation';
 import {cn} from '@/shared/lib/utils';
 import {Sidebar} from '@/features/dashboard/ui/sidebar';
-import {useCurrentUser, useLogout} from '@/features/auth/hooks/auth.hooks';
+import {useCurrentUser} from '@/features/auth/hooks/auth.hooks';
 import {useEffect} from 'react';
+import {useRouter} from 'next/navigation';
 import {EyeOff, Pencil, Power, Trash2} from 'lucide-react';
 
 export default function ServicesPage() {
     const router = useRouter();
     const queryClient = useQueryClient();
     const {data: user} = useCurrentUser();
-    const logout = useLogout();
     const [isCreating, setIsCreating] = useState(false);
     const [editingService, setEditingService] = useState<Service | null>(null);
     const [formData, setFormData] = useState<CreateServiceInput | UpdateServiceInput>({
@@ -94,21 +93,15 @@ export default function ServicesPage() {
         setFormData({name: '', description: '', duration: 60, price: 0});
     };
 
-    const handleLogout = async () => {
-        await logout.mutateAsync();
-        router.push('/');
-    };
-
     return (
         <div className="min-h-screen bg-background">
             {/* Sidebar */}
-            <Sidebar 
+            <Sidebar
                 user={user?.master || user?.client ? {
                     fullName: user.master?.fullName || user.client?.fullName,
                     email: user.email,
                     avatar: user.master?.avatarUrl || user.client?.avatarUrl,
                 } : undefined}
-                onLogout={handleLogout}
             />
 
             {/* Header */}

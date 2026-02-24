@@ -19,7 +19,7 @@ import {
     MapPin,
     TrendingUp,
     Users,
-    LogOut
+    LogOut,
 } from 'lucide-react';
 import {useAuth, useLogout} from '@/features/auth/hooks/auth.hooks';
 import {FavoriteCard, EmptyFavorites} from '@/features/favorites';

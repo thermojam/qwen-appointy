@@ -5,7 +5,7 @@ import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
 import {api} from '@/shared/api/client';
 import type {Appointment, AppointmentStatus} from '@/shared/types/api';
 import {Sidebar} from '@/features/dashboard/ui/sidebar';
-import {useCurrentUser, useLogout} from '@/features/auth/hooks/auth.hooks';
+import {useCurrentUser} from '@/features/auth/hooks/auth.hooks';
 import {Card, CardContent} from '@/shared/ui/card';
 import {Button} from '@/shared/ui/button';
 import {useRouter} from 'next/navigation';
@@ -76,7 +76,6 @@ export default function AppointmentsPage() {
     const [selectedStatus, setSelectedStatus] = useState<AppointmentStatus | 'ALL'>('ALL');
 
     const currentUserQuery = useCurrentUser();
-    const logout = useLogout();
     const currentUser = currentUserQuery.data;
 
     const {data: appointments, isLoading} = useQuery({
@@ -116,11 +115,6 @@ export default function AppointmentsPage() {
             queryClient.invalidateQueries({queryKey: ['appointments']});
         },
     });
-
-    const handleLogout = async () => {
-        await logout.mutateAsync();
-        router.push('/');
-    };
 
     if (!currentUser) {
         return (
@@ -205,7 +199,6 @@ export default function AppointmentsPage() {
                     email: user.email,
                     avatar: masterData?.avatarUrl,
                 }}
-                onLogout={handleLogout}
             />
 
             {/* Main Content */}

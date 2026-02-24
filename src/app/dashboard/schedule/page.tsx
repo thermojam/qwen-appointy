@@ -5,11 +5,10 @@ import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
 import {api} from '@/shared/api/client';
 import type {Schedule, DayOfWeek} from '@/shared/types/api';
 import {Sidebar} from '@/features/dashboard/ui/sidebar';
-import {useCurrentUser, useLogout} from '@/features/auth/hooks/auth.hooks';
+import {useCurrentUser} from '@/features/auth/hooks/auth.hooks';
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '@/shared/ui/card';
 import {Button} from '@/shared/ui/button';
 import {Input} from '@/shared/ui/input';
-import {useRouter} from 'next/navigation';
 import {
     Clock,
     Plus,
@@ -31,7 +30,6 @@ const daysOfWeek: Array<{ value: DayOfWeek; label: string }> = [
 ];
 
 export default function SchedulePage() {
-    const router = useRouter();
     const queryClient = useQueryClient();
     const [isCreating, setIsCreating] = useState(false);
     const [selectedDay, setSelectedDay] = useState<DayOfWeek | 'ALL'>('ALL');
@@ -54,7 +52,6 @@ export default function SchedulePage() {
     });
 
     const currentUserQuery = useCurrentUser();
-    const logout = useLogout();
     const currentUser = currentUserQuery.data;
 
     const {data: schedules, isLoading} = useQuery({
@@ -108,11 +105,6 @@ export default function SchedulePage() {
             queryClient.invalidateQueries({queryKey: ['schedule']});
         },
     });
-
-    const handleLogout = async () => {
-        await logout.mutateAsync();
-        router.push('/');
-    };
 
     const handleCreateSchedule = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -252,7 +244,6 @@ export default function SchedulePage() {
                     email: user.email,
                     avatar: masterData?.avatarUrl,
                 }}
-                onLogout={handleLogout}
             />
 
             {/* Main Content */}

@@ -4,7 +4,7 @@ import {useEffect} from 'react';
 import {useRouter} from 'next/navigation';
 import {useQuery} from '@tanstack/react-query';
 import {api} from '@/shared/api/client';
-import {useCurrentUser, useLogout} from '@/features/auth/hooks/auth.hooks';
+import {useCurrentUser} from '@/features/auth/hooks/auth.hooks';
 import {Sidebar} from '@/features/dashboard/ui/sidebar';
 import {Card, CardContent} from '@/shared/ui/card';
 import type {User} from '@/shared/types/api';
@@ -24,7 +24,6 @@ import {cn} from '@/shared/lib/utils';
 export default function DashboardPage() {
     const router = useRouter();
     const currentUserQuery = useCurrentUser();
-    const logout = useLogout();
 
     const currentUser = currentUserQuery.data;
     const isLoading = currentUserQuery.isLoading;
@@ -48,11 +47,6 @@ export default function DashboardPage() {
             router.push('/sign-in');
         }
     }, [currentUser, isLoading, router]);
-
-    const handleLogout = async () => {
-        await logout.mutateAsync();
-        router.push('/');
-    };
 
     if (isLoading || !currentUser) {
         return (
@@ -149,7 +143,6 @@ export default function DashboardPage() {
                     email: user.email,
                     avatar: masterData?.avatarUrl,
                 }}
-                onLogout={handleLogout}
             />
 
             {/* Main Content */}

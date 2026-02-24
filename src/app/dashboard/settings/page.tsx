@@ -5,11 +5,10 @@ import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
 import {api} from '@/shared/api/client';
 import type {WorkFormat, OfflineMode} from '@/shared/types/api';
 import {Sidebar} from '@/features/dashboard/ui/sidebar';
-import {useCurrentUser, useLogout} from '@/features/auth/hooks/auth.hooks';
+import {useCurrentUser} from '@/features/auth/hooks/auth.hooks';
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '@/shared/ui/card';
 import {Button} from '@/shared/ui/button';
 import {Input} from '@/shared/ui/input';
-import {useRouter} from 'next/navigation';
 import {cn} from '@/shared/lib/utils';
 import {
     User,
@@ -41,13 +40,11 @@ interface WorkFormState {
 }
 
 export default function SettingsPage() {
-    const router = useRouter();
     const queryClient = useQueryClient();
     const [activeTab, setActiveTab] = useState<'profile' | 'booking' | 'work'>('profile');
 
     // Хуки должны вызываться всегда в одинаковом порядке
     const {data: currentUser, isLoading: userLoading} = useCurrentUser();
-    const logout = useLogout();
     
     const {data: masterSettings, isLoading: settingsLoading} = useQuery({
         queryKey: ['master-settings'],
@@ -80,11 +77,6 @@ export default function SettingsPage() {
             queryClient.invalidateQueries({queryKey: ['master-settings']});
         },
     });
-
-    const handleLogout = async () => {
-        await logout.mutateAsync();
-        router.push('/');
-    };
 
     // Формы с дефолтными значениями - вынесены ДО любых условных рендеров
     const [profileForm, setProfileForm] = useState<ProfileFormState>({
@@ -177,7 +169,6 @@ export default function SettingsPage() {
                     email: user.email,
                     avatar: masterData?.avatarUrl,
                 }}
-                onLogout={handleLogout}
             />
 
             {/* Main Content */}
