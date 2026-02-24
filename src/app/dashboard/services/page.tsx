@@ -7,11 +7,13 @@ import type {Service, CreateServiceInput, UpdateServiceInput} from '@/shared/typ
 import {Button} from '@/shared/ui/button';
 import {Input} from '@/shared/ui/input';
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '@/shared/ui/card';
+import {Badge} from '@/shared/ui/badge';
 import {useRouter} from 'next/navigation';
 import {cn} from '@/shared/lib/utils';
 import {Sidebar} from '@/features/dashboard/ui/sidebar';
 import {useCurrentUser, useLogout} from '@/features/auth/hooks/auth.hooks';
 import {useEffect} from 'react';
+import {EyeOff, Pencil, Power, Trash2} from 'lucide-react';
 
 export default function ServicesPage() {
     const router = useRouter();
@@ -235,54 +237,101 @@ export default function ServicesPage() {
                 ) : services && services.length > 0 ? (
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {services.map((service) => (
-                            <Card key={service.id}>
+                            <Card 
+                                key={service.id}
+                                className={cn(
+                                    'transition-all duration-300',
+                                    !service.isActive && 'opacity-60 hover:opacity-100 bg-muted/30'
+                                )}
+                            >
+                                {/* Status bar - полоска статуса сверху */}
+                                <div className={cn(
+                                    'h-1.5 rounded-t-3xl transition-colors',
+                                    service.isActive 
+                                        ? 'bg-success' 
+                                        : 'bg-muted'
+                                )} />
+                                
                                 <CardHeader>
-                                    <CardTitle className="text-xl">{service.name}</CardTitle>
-                                    <CardDescription>{service.description}</CardDescription>
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className="flex-1">
+                                            <CardTitle className="text-xl">{service.name}</CardTitle>
+                                            <CardDescription className="line-clamp-2">
+                                                {service.description}
+                                            </CardDescription>
+                                        </div>
+                                        {!service.isActive && (
+                                            <Badge 
+                                                variant="secondary" 
+                                                className="bg-muted text-muted-foreground flex-shrink-0"
+                                                title="Услуга скрыта от клиентов"
+                                            >
+                                                <EyeOff className="w-3 h-3 mr-1" />
+                                                Скрыта
+                                            </Badge>
+                                        )}
+                                    </div>
                                 </CardHeader>
                                 <CardContent>
                                     <div className="flex justify-between items-center mb-4">
                                         <div>
-                                            <p className="text-2xl font-bold">{service.price} ₽</p>
+                                            <p className={cn(
+                                                'text-2xl font-bold',
+                                                !service.isActive && 'line-through text-muted-foreground'
+                                            )}>
+                                                {service.price} ₽
+                                            </p>
                                             <p className="text-sm text-muted-foreground">
                                                 {service.duration} мин
                                             </p>
                                         </div>
-                                        <span
-                                            className={`px-2 py-1 rounded-full text-xs ${
-                                                service.isActive
-                                                    ? 'bg-success/10 text-success'
-                                                    : 'bg-muted text-muted-foreground'
-                                            }`}
-                                        >
-                      {service.isActive ? 'Активна' : 'Неактивна'}
-                    </span>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <Button
+                                        <Badge
                                             variant="outline"
-                                            size="sm"
-                                            className="flex-1"
-                                            onClick={() => handleEdit(service)}
+                                            className={cn(
+                                                'text-xs',
+                                                service.isActive 
+                                                    ? 'border-success text-success bg-success/10' 
+                                                    : 'border-muted text-muted-foreground'
+                                            )}
                                         >
-                                            {editingService?.id === service.id ? 'Отмена' : 'Редактировать'}
+                                            {service.isActive ? 'Активна' : 'Неактивна'}
+                                        </Badge>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-2 pt-2 border-t">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => handleEdit(service)}
+                                            className="h-10 w-10 hover:bg-primary/10 hover:text-primary"
+                                            title="Редактировать"
+                                        >
+                                            <Pencil className="w-4 h-4" />
                                         </Button>
                                         <Button
-                                            variant="outline"
-                                            size="sm"
+                                            variant="ghost"
+                                            size="icon"
                                             onClick={() => toggleServiceStatus.mutate({
                                                 id: service.id,
                                                 isActive: !service.isActive
                                             })}
+                                            className={cn(
+                                                "h-10 w-10",
+                                                service.isActive 
+                                                    ? 'hover:bg-muted' 
+                                                    : 'hover:bg-success/10 text-success'
+                                            )}
+                                            title={service.isActive ? 'Деактивировать' : 'Активировать'}
                                         >
-                                            {service.isActive ? 'Деактивировать' : 'Активировать'}
+                                            <Power className="w-4 h-4" />
                                         </Button>
                                         <Button
-                                            variant="destructive"
-                                            size="sm"
+                                            variant="ghost"
+                                            size="icon"
                                             onClick={() => deleteService.mutate(service.id)}
+                                            className="h-10 w-10 hover:bg-destructive/10 hover:text-destructive"
+                                            title="Удалить"
                                         >
-                                            Удалить
+                                            <Trash2 className="w-4 h-4" />
                                         </Button>
                                     </div>
                                 </CardContent>

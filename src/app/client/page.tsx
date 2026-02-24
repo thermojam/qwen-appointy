@@ -24,7 +24,7 @@ import {
 import {useAuth, useLogout} from '@/features/auth/hooks/auth.hooks';
 import {FavoriteCard, EmptyFavorites} from '@/features/favorites';
 
-type Tab = 'appointments' | 'favorites' | 'history';
+type Tab = 'search' | 'appointments' | 'favorites' | 'history';
 
 interface ReviewData {
   appointmentId?: string;
@@ -37,7 +37,7 @@ export default function ClientDashboardPage() {
     const queryClient = useQueryClient();
     const {user, isAuthenticated, isLoading} = useAuth();
     const logout = useLogout();
-    const [activeTab, setActiveTab] = useState<Tab>('appointments');
+    const [activeTab, setActiveTab] = useState<Tab>('search');
     const [reviewModalOpen, setReviewModalOpen] = useState(false);
     const [selectedReview, setSelectedReview] = useState<ReviewData | null>(null);
     const [cancelModalOpen, setCancelModalOpen] = useState(false);
@@ -199,7 +199,7 @@ export default function ClientDashboardPage() {
                                 variant="ghost"
                                 size="icon"
                                 onClick={handleLogout}
-                                className="text-destructive hover:text-destructive"
+                                className="text-muted-foreground hover:hover:text-foreground hover:bg-secondary"
                                 title="Выйти"
                             >
                                 <LogOut className="w-5 h-5"/>
@@ -209,6 +209,15 @@ export default function ClientDashboardPage() {
 
                     {/* Tabs */}
                     <div className="flex gap-2 mt-4">
+                        <Button
+                            variant={activeTab === 'search' ? 'default' : 'ghost'}
+                            size="sm"
+                            onClick={() => setActiveTab('search')}
+                            className="gap-2"
+                        >
+                            <Users className="w-4 h-4" />
+                            Поиск
+                        </Button>
                         <Button
                             variant={activeTab === 'appointments' ? 'default' : 'ghost'}
                             size="sm"
@@ -301,6 +310,23 @@ export default function ClientDashboardPage() {
                 </div>
 
                 {/* Tab Content */}
+                {activeTab === 'search' && (
+                    <div className="space-y-4">
+                        <div className="text-center py-12">
+                            <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4"/>
+                            <h3 className="font-heading font-semibold text-lg mb-2">
+                                Поиск мастеров
+                            </h3>
+                            <p className="text-muted-foreground mb-6">
+                                Найдите лучших мастеров в вашем городе
+                            </p>
+                            <Button onClick={() => router.push('/search')} size="lg">
+                                Перейти к поиску
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
                 {activeTab === 'appointments' && (
                     <div className="space-y-4">
                         <h2 className="font-heading font-semibold text-xl mb-4">

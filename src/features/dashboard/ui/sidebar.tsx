@@ -283,7 +283,7 @@ export function Sidebar({user, onLogout}: SidebarProps) {
                                     className="p-2 rounded-lg hover:bg-secondary transition-colors"
                                     title="Выйти"
                                 >
-                                    <LogOut className="w-4 h-4 text-muted-foreground"/>
+                                    <LogOut className="w-4 h-4 text-muted-foreground hover:text-foreground"/>
                                 </button>
                             </>
                         )}
@@ -293,7 +293,7 @@ export function Sidebar({user, onLogout}: SidebarProps) {
                                 className="p-2 rounded-lg hover:bg-secondary transition-colors"
                                 title="Выйти"
                             >
-                                <LogOut className="w-4 h-4 text-muted-foreground"/>
+                                <LogOut className="w-4 h-4 text-muted-foreground hover:text-foreground"/>
                             </button>
                         )}
                     </div>

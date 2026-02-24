@@ -73,6 +73,8 @@ export default function DashboardPage() {
             change: stats && stats.todayAppointments > 0 ? '+1' : '0',
             isPositive: true,
             icon: Calendar,
+            iconColor: 'text-blue-600',
+            iconBg: 'bg-blue-100',
         },
         {
             title: 'Заработано сегодня',
@@ -80,6 +82,8 @@ export default function DashboardPage() {
             change: stats && stats.todayRevenue > 0 ? '+15%' : '0%',
             isPositive: (stats?.todayRevenue || 0) > 0,
             icon: DollarSign,
+            iconColor: 'text-green-600',
+            iconBg: 'bg-green-100',
         },
         {
             title: 'Всего клиентов',
@@ -87,6 +91,8 @@ export default function DashboardPage() {
             change: '+2',
             isPositive: true,
             icon: Users,
+            iconColor: 'text-purple-600',
+            iconBg: 'bg-purple-100',
         },
         {
             title: 'Рейтинг',
@@ -94,6 +100,8 @@ export default function DashboardPage() {
             change: stats && stats.averageRating >= 4.5 ? '+0.1' : '0',
             isPositive: (stats?.averageRating || 0) >= 4.5,
             icon: Star,
+            iconColor: 'text-amber-500',
+            iconBg: 'bg-amber-100',
         },
     ];
 
@@ -168,8 +176,12 @@ export default function DashboardPage() {
                                 <CardContent className="p-6">
                                     <div className="flex items-start justify-between mb-4">
                                         <div
-                                            className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-                                            <Icon className="w-6 h-6 text-primary"/>
+                                            className={cn(
+                                                'w-12 h-12 rounded-2xl flex items-center justify-center',
+                                                stat.iconBg
+                                            )}
+                                        >
+                                            <Icon className={cn('w-6 h-6', stat.iconColor)}/>
                                         </div>
                                         <div
                                             className={`flex items-center gap-1 text-sm font-medium ${
@@ -206,8 +218,8 @@ export default function DashboardPage() {
                             <div className="flex items-center justify-between mb-6">
                                 <div className="flex items-center gap-3">
                                     <div
-                                        className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                                        <Clock className="w-5 h-5 text-primary"/>
+                                        className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
+                                        <Clock className="w-5 h-5 text-blue-600"/>
                                     </div>
                                     <div>
                                         <h2 className="font-heading text-xl font-bold">
@@ -276,8 +288,8 @@ export default function DashboardPage() {
                     <Card className="rounded-3xl">
                         <CardContent className="p-6">
                             <div className="flex items-center gap-3 mb-6">
-                                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                                    <TrendingUp className="w-5 h-5 text-primary"/>
+                                <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
+                                    <TrendingUp className="w-5 h-5 text-purple-600"/>
                                 </div>
                                 <div>
                                     <h2 className="font-heading text-xl font-bold">
@@ -292,7 +304,7 @@ export default function DashboardPage() {
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between p-3 rounded-xl bg-secondary/50">
                                     <div className="flex items-center gap-3">
-                                        <Clock className="w-5 h-5 text-primary"/>
+                                        <Clock className="w-5 h-5 text-blue-600"/>
                                         <span className="text-sm font-medium">Ожидают</span>
                                     </div>
                                     <span className="font-semibold">{stats?.pendingAppointments || 0}</span>
@@ -300,7 +312,7 @@ export default function DashboardPage() {
 
                                 <div className="flex items-center justify-between p-3 rounded-xl bg-secondary/50">
                                     <div className="flex items-center gap-3">
-                                        <CheckCircle className="w-5 h-5 text-primary"/>
+                                        <CheckCircle className="w-5 h-5 text-green-600"/>
                                         <span className="text-sm font-medium">Подтверждено</span>
                                     </div>
                                     <span className="font-semibold">{stats?.confirmedAppointments || 0}</span>
@@ -308,7 +320,7 @@ export default function DashboardPage() {
 
                                 <div className="flex items-center justify-between p-3 rounded-xl bg-secondary/50">
                                     <div className="flex items-center gap-3">
-                                        <Star className="w-5 h-5 text-primary"/>
+                                        <Star className="w-5 h-5 text-amber-500"/>
                                         <span className="text-sm font-medium">Отзывов</span>
                                     </div>
                                     <span className="font-semibold">{stats?.totalReviews || 0}</span>
@@ -316,7 +328,7 @@ export default function DashboardPage() {
 
                                 <div className="flex items-center justify-between p-3 rounded-xl bg-secondary/50">
                                     <div className="flex items-center gap-3">
-                                        <DollarSign className="w-5 h-5 text-primary"/>
+                                        <DollarSign className="w-5 h-5 text-green-600"/>
                                         <span className="text-sm font-medium">Всего записей</span>
                                     </div>
                                     <span className="font-semibold">{stats?.totalAppointments || 0}</span>
