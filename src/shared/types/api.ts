@@ -134,35 +134,24 @@ export interface UpdateServiceInput {
 }
 
 // Schedule
-export type DayOfWeek =
-  | 'MONDAY'
-  | 'TUESDAY'
-  | 'WEDNESDAY'
-  | 'THURSDAY'
-  | 'FRIDAY'
-  | 'SATURDAY'
-  | 'SUNDAY';
-
 export interface Schedule {
   id: string;
   masterId: string;
-  dayOfWeek: DayOfWeek;
-  startTime: string;
-  endTime: string;
+  date: string;        // ISO date string "YYYY-MM-DD"
+  startTime: string;   // "HH:MM"
+  endTime: string;     // "HH:MM"
   breakStart?: string | null;
   breakEnd?: string | null;
-  isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface CreateScheduleInput {
-  dayOfWeek: DayOfWeek;
+  date: string;        // "YYYY-MM-DD"
   startTime: string;
   endTime: string;
   breakStart?: string;
   breakEnd?: string;
-  isActive?: boolean;
 }
 
 // Appointment

@@ -1,14 +1,13 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { WorkFormat, DayOfWeek, OfflineMode } from '@prisma/client';
+import { WorkFormat, OfflineMode } from '@prisma/client';
 
 export interface ScheduleDay {
-  dayOfWeek: DayOfWeek;
+  date: string; // YYYY-MM-DD
   startTime: string;
   endTime: string;
   breakStart?: string;
   breakEnd?: string;
-  isActive: boolean;
 }
 
 interface MasterOnboardingData {
@@ -78,15 +77,7 @@ interface OnboardingState {
   resetOnboarding: () => void;
 }
 
-const defaultSchedule: ScheduleDay[] = [
-  { dayOfWeek: 'MONDAY', startTime: '09:00', endTime: '18:00', isActive: true },
-  { dayOfWeek: 'TUESDAY', startTime: '09:00', endTime: '18:00', isActive: true },
-  { dayOfWeek: 'WEDNESDAY', startTime: '09:00', endTime: '18:00', isActive: true },
-  { dayOfWeek: 'THURSDAY', startTime: '09:00', endTime: '18:00', isActive: true },
-  { dayOfWeek: 'FRIDAY', startTime: '09:00', endTime: '18:00', isActive: true },
-  { dayOfWeek: 'SATURDAY', startTime: '10:00', endTime: '16:00', isActive: false },
-  { dayOfWeek: 'SUNDAY', startTime: '10:00', endTime: '16:00', isActive: false },
-];
+const defaultSchedule: ScheduleDay[] = [];
 
 export const useOnboardingStore = create<OnboardingState>()(
   persist(

@@ -1,178 +1,152 @@
 'use client';
 
-import { useMemo } from 'react';
-import { Clock, X } from 'lucide-react';
+import { useState } from 'react';
+import { Clock, X, Plus } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
-import type { DayOfWeek } from '@prisma/client';
-
-interface ScheduleDay {
-  dayOfWeek: DayOfWeek;
-  startTime: string;
-  endTime: string;
-  breakStart?: string;
-  breakEnd?: string;
-  isActive: boolean;
-}
+import type { ScheduleDay } from '../hooks/useOnboardingStore';
 
 interface ScheduleBuilderProps {
   value: ScheduleDay[];
   onChange: (schedule: ScheduleDay[]) => void;
 }
 
-const dayLabels: Record<DayOfWeek, string> = {
-  MONDAY: 'Понедельник',
-  TUESDAY: 'Вторник',
-  WEDNESDAY: 'Среда',
-  THURSDAY: 'Четверг',
-  FRIDAY: 'Пятница',
-  SATURDAY: 'Суббота',
-  SUNDAY: 'Воскресенье',
-};
-
-const dayOrder: DayOfWeek[] = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+function formatDate(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' });
+}
 
 export function ScheduleBuilder({ value, onChange }: ScheduleBuilderProps) {
-  const sortedSchedule = useMemo(() => {
-    return [...value].sort((a, b) => dayOrder.indexOf(a.dayOfWeek) - dayOrder.indexOf(b.dayOfWeek));
-  }, [value]);
+  const [newDate, setNewDate] = useState('');
 
-  const toggleDay = (dayOfWeek: DayOfWeek) => {
-    onChange(
-      value.map((day) =>
-        day.dayOfWeek === dayOfWeek ? { ...day, isActive: !day.isActive } : day
-      )
+  const addDay = () => {
+    if (!newDate) return;
+    if (value.some((d) => d.date === newDate)) return;
+    const sorted = [...value, { date: newDate, startTime: '09:00', endTime: '18:00' }].sort(
+      (a, b) => a.date.localeCompare(b.date)
     );
+    onChange(sorted);
+    setNewDate('');
   };
 
-  const updateTime = (dayOfWeek: DayOfWeek, field: keyof ScheduleDay, time: string) => {
-    onChange(
-      value.map((day) =>
-        day.dayOfWeek === dayOfWeek ? { ...day, [field]: time } : day
-      )
-    );
+  const removeDay = (date: string) => {
+    onChange(value.filter((d) => d.date !== date));
   };
 
-  const toggleBreak = (dayOfWeek: DayOfWeek) => {
+  const updateTime = (date: string, field: 'startTime' | 'endTime', time: string) => {
+    onChange(value.map((d) => (d.date === date ? { ...d, [field]: time } : d)));
+  };
+
+  const toggleBreak = (date: string) => {
     onChange(
-      value.map((day) => {
-        if (day.dayOfWeek !== dayOfWeek) return day;
-        
-        if (day.breakStart && day.breakEnd) {
-          return { ...day, breakStart: '', breakEnd: '' };
+      value.map((d) => {
+        if (d.date !== date) return d;
+        if (d.breakStart && d.breakEnd) {
+          return { ...d, breakStart: undefined, breakEnd: undefined };
         }
-        return { ...day, breakStart: '13:00', breakEnd: '14:00' };
+        return { ...d, breakStart: '13:00', breakEnd: '14:00' };
       })
     );
   };
 
-  const updateBreakTime = (dayOfWeek: DayOfWeek, field: 'breakStart' | 'breakEnd', time: string) => {
-    onChange(
-      value.map((day) =>
-        day.dayOfWeek === dayOfWeek ? { ...day, [field]: time } : day
-      )
-    );
+  const updateBreakTime = (date: string, field: 'breakStart' | 'breakEnd', time: string) => {
+    onChange(value.map((d) => (d.date === date ? { ...d, [field]: time } : d)));
   };
 
   return (
-    <div className="space-y-3">
-      {sortedSchedule.map((day) => (
+    <div className="space-y-4">
+      {/* Add date */}
+      <div className="flex items-center gap-2">
+        <Input
+          type="date"
+          value={newDate}
+          onChange={(e) => setNewDate(e.target.value)}
+          className="w-48"
+          min={new Date().toISOString().slice(0, 10)}
+        />
+        <Button type="button" variant="outline" size="sm" onClick={addDay} disabled={!newDate}>
+          <Plus className="w-4 h-4 mr-1" />
+          Добавить день
+        </Button>
+      </div>
+
+      {value.length === 0 && (
+        <p className="text-sm text-muted-foreground">
+          Добавьте рабочие дни, выбрав даты выше
+        </p>
+      )}
+
+      {value.map((day) => (
         <div
-          key={day.dayOfWeek}
-          className={cn(
-            'p-4 rounded-lg border transition-colors',
-            day.isActive ? 'border-primary bg-secondary/50' : 'border-border bg-muted/30'
-          )}
+          key={day.date}
+          className="p-4 rounded-lg border border-primary bg-secondary/50 space-y-3"
         >
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => toggleDay(day.dayOfWeek)}
-                className={cn(
-                  'w-12 h-6 rounded-full transition-colors relative',
-                  day.isActive ? 'bg-primary' : 'bg-secondary'
-                )}
-              >
-                <div
-                  className={cn(
-                    'absolute top-1 w-4 h-4 rounded-full bg-white transition-transform',
-                    day.isActive ? 'right-1' : 'left-1'
-                  )}
-                />
-              </button>
-              <span className={cn('font-medium', !day.isActive && 'text-muted-foreground')}>
-                {dayLabels[day.dayOfWeek]}
-              </span>
-            </div>
-            <span className={cn('text-sm', !day.isActive && 'text-muted-foreground')}>
-              {day.isActive ? (
-                `${day.startTime} - ${day.endTime}${day.breakStart ? ` (перерыв ${day.breakStart}-${day.breakEnd})` : ''}`
-              ) : (
-                'Выходной'
-              )}
-            </span>
+          <div className="flex items-center justify-between">
+            <span className="font-medium">{formatDate(day.date)}</span>
+            <button
+              type="button"
+              onClick={() => removeDay(day.date)}
+              className="text-muted-foreground hover:text-destructive transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
 
-          {day.isActive && (
-            <div className="space-y-3 pl-15">
-              {/* Рабочее время */}
-              <div className="flex items-center gap-4">
-                <Clock className="w-4 h-4 text-muted-foreground" />
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="time"
-                    value={day.startTime}
-                    onChange={(e) => updateTime(day.dayOfWeek, 'startTime', e.target.value)}
-                    className="w-28"
-                  />
-                  <span className="text-muted-foreground">—</span>
-                  <Input
-                    type="time"
-                    value={day.endTime}
-                    onChange={(e) => updateTime(day.dayOfWeek, 'endTime', e.target.value)}
-                    className="w-28"
-                  />
-                </div>
-              </div>
-
-              {/* Перерыв */}
-              <div className="flex items-center gap-4">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => toggleBreak(day.dayOfWeek)}
-                  className={cn(
-                    'h-8 text-sm',
-                    (day.breakStart && day.breakEnd) ? 'text-primary' : 'text-muted-foreground'
-                  )}
-                >
-                  {(day.breakStart && day.breakEnd) && <X className="w-3 h-3 mr-1" />}
-                  {day.breakStart && day.breakEnd ? 'Убрать перерыв' : 'Добавить перерыв'}
-                </Button>
-
-                {day.breakStart && day.breakEnd && (
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="time"
-                      value={day.breakStart}
-                      onChange={(e) => updateBreakTime(day.dayOfWeek, 'breakStart', e.target.value)}
-                      className="w-24"
-                    />
-                    <span className="text-muted-foreground">—</span>
-                    <Input
-                      type="time"
-                      value={day.breakEnd}
-                      onChange={(e) => updateBreakTime(day.dayOfWeek, 'breakEnd', e.target.value)}
-                      className="w-24"
-                    />
-                  </div>
-                )}
-              </div>
+          {/* Work hours */}
+          <div className="flex items-center gap-4">
+            <Clock className="w-4 h-4 text-muted-foreground" />
+            <div className="flex items-center gap-2">
+              <Input
+                type="time"
+                value={day.startTime}
+                onChange={(e) => updateTime(day.date, 'startTime', e.target.value)}
+                className="w-28"
+              />
+              <span className="text-muted-foreground">—</span>
+              <Input
+                type="time"
+                value={day.endTime}
+                onChange={(e) => updateTime(day.date, 'endTime', e.target.value)}
+                className="w-28"
+              />
             </div>
-          )}
+          </div>
+
+          {/* Break */}
+          <div className="flex items-center gap-4">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => toggleBreak(day.date)}
+              className={cn(
+                'h-8 text-sm',
+                day.breakStart && day.breakEnd ? 'text-primary' : 'text-muted-foreground'
+              )}
+            >
+              {day.breakStart && day.breakEnd && <X className="w-3 h-3 mr-1" />}
+              {day.breakStart && day.breakEnd ? 'Убрать перерыв' : 'Добавить перерыв'}
+            </Button>
+
+            {day.breakStart && day.breakEnd && (
+              <div className="flex items-center gap-2">
+                <Input
+                  type="time"
+                  value={day.breakStart}
+                  onChange={(e) => updateBreakTime(day.date, 'breakStart', e.target.value)}
+                  className="w-24"
+                />
+                <span className="text-muted-foreground">—</span>
+                <Input
+                  type="time"
+                  value={day.breakEnd}
+                  onChange={(e) => updateBreakTime(day.date, 'breakEnd', e.target.value)}
+                  className="w-24"
+                />
+              </div>
+            )}
+          </div>
         </div>
       ))}
     </div>

@@ -14,6 +14,7 @@ export function MasterStep5({ onNext, onBack }: MasterStep5Props) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (master.schedule.length === 0) return;
     onNext();
   };
 
@@ -21,7 +22,7 @@ export function MasterStep5({ onNext, onBack }: MasterStep5Props) {
     updateMasterSchedule(schedule);
   };
 
-  const activeDays = master.schedule.filter((day) => day.isActive).length;
+  const scheduledDays = master.schedule.length;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -34,10 +35,10 @@ export function MasterStep5({ onNext, onBack }: MasterStep5Props) {
 
       <div className="p-4 bg-secondary/50 rounded-lg">
         <p className="text-sm">
-          <span className="font-medium">Активных дней:</span> {activeDays} из 7
+          <span className="font-medium">Запланировано дней:</span> {scheduledDays}
         </p>
         <p className="text-xs text-muted-foreground mt-1">
-          Включите дни, когда вы готовы принимать клиентов
+          Добавьте дни, когда вы готовы принимать клиентов
         </p>
       </div>
 
@@ -57,7 +58,7 @@ export function MasterStep5({ onNext, onBack }: MasterStep5Props) {
         <button
           type="submit"
           className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
-          disabled={activeDays === 0}
+          disabled={scheduledDays === 0}
         >
           Далее
         </button>

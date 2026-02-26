@@ -1,5 +1,5 @@
 import {z} from 'zod';
-import {UserRole, WorkFormat, DayOfWeek} from '@prisma/client';
+import {UserRole, WorkFormat} from '@prisma/client';
 
 // ====================================================
 // AUTH SCHEMAS
@@ -70,12 +70,11 @@ export const updateServiceSchema = z.object({
 const timeSchema = z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time format (HH:MM)');
 
 export const createScheduleSchema = z.object({
-    dayOfWeek: z.nativeEnum(DayOfWeek),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format (YYYY-MM-DD)'),
     startTime: timeSchema,
     endTime: timeSchema,
-    breakStart: timeSchema.optional().or(z.literal('')),
-    breakEnd: timeSchema.optional().or(z.literal('')),
-    isActive: z.boolean().default(true),
+    breakStart: timeSchema.optional().or(z.literal('')).or(z.null()).transform(v => v || undefined),
+    breakEnd: timeSchema.optional().or(z.literal('')).or(z.null()).transform(v => v || undefined),
 });
 
 // ====================================================

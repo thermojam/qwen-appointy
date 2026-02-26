@@ -143,8 +143,7 @@ export const onboardingService = {
           where: { isActive: true },
         },
         schedule: {
-          where: { isActive: true },
-          orderBy: { dayOfWeek: 'asc' },
+          orderBy: { date: 'asc' },
         },
         reviews: {
           select: {

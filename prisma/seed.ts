@@ -1,4 +1,4 @@
-import {PrismaClient, UserRole, WorkFormat, DayOfWeek} from '@prisma/client';
+import {PrismaClient, UserRole, WorkFormat} from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -30,12 +30,8 @@ const mastersData = [
             {name: 'Наращивание ногтей', duration: 180, price: 5500},
         ],
         schedule: [
-            {dayOfWeek: DayOfWeek.MONDAY, startTime: '10:00', endTime: '20:00'},
-            {dayOfWeek: DayOfWeek.TUESDAY, startTime: '10:00', endTime: '20:00'},
-            {dayOfWeek: DayOfWeek.WEDNESDAY, startTime: '10:00', endTime: '20:00'},
-            {dayOfWeek: DayOfWeek.THURSDAY, startTime: '10:00', endTime: '20:00'},
-            {dayOfWeek: DayOfWeek.FRIDAY, startTime: '10:00', endTime: '20:00'},
-            {dayOfWeek: DayOfWeek.SATURDAY, startTime: '11:00', endTime: '18:00'},
+            {daysOfWeek: [1, 2, 3, 4, 5], startTime: '10:00', endTime: '20:00'},
+            {daysOfWeek: [6], startTime: '11:00', endTime: '18:00'},
         ],
     },
     {
@@ -59,12 +55,8 @@ const mastersData = [
             {name: 'Стрижка мужская', duration: 45, price: 2000},
         ],
         schedule: [
-            {dayOfWeek: DayOfWeek.MONDAY, startTime: '11:00', endTime: '21:00'},
-            {dayOfWeek: DayOfWeek.TUESDAY, startTime: '11:00', endTime: '21:00'},
-            {dayOfWeek: DayOfWeek.WEDNESDAY, startTime: '11:00', endTime: '21:00'},
-            {dayOfWeek: DayOfWeek.THURSDAY, startTime: '11:00', endTime: '21:00'},
-            {dayOfWeek: DayOfWeek.FRIDAY, startTime: '11:00', endTime: '21:00'},
-            {dayOfWeek: DayOfWeek.SATURDAY, startTime: '10:00', endTime: '18:00'},
+            {daysOfWeek: [1, 2, 3, 4, 5], startTime: '11:00', endTime: '21:00'},
+            {daysOfWeek: [6], startTime: '10:00', endTime: '18:00'},
         ],
     },
     {
@@ -87,12 +79,9 @@ const mastersData = [
             {name: 'Макияж для фотосессии', duration: 90, price: 6000},
         ],
         schedule: [
-            {dayOfWeek: DayOfWeek.TUESDAY, startTime: '12:00', endTime: '20:00'},
-            {dayOfWeek: DayOfWeek.WEDNESDAY, startTime: '12:00', endTime: '20:00'},
-            {dayOfWeek: DayOfWeek.THURSDAY, startTime: '12:00', endTime: '20:00'},
-            {dayOfWeek: DayOfWeek.FRIDAY, startTime: '12:00', endTime: '20:00'},
-            {dayOfWeek: DayOfWeek.SATURDAY, startTime: '10:00', endTime: '18:00'},
-            {dayOfWeek: DayOfWeek.SUNDAY, startTime: '10:00', endTime: '16:00'},
+            {daysOfWeek: [2, 3, 4, 5], startTime: '12:00', endTime: '20:00'},
+            {daysOfWeek: [6], startTime: '10:00', endTime: '18:00'},
+            {daysOfWeek: [0], startTime: '10:00', endTime: '16:00'},
         ],
     },
     {
@@ -116,10 +105,8 @@ const mastersData = [
             {name: 'Наращивание ресниц (2D)', duration: 150, price: 5000},
         ],
         schedule: [
-            {dayOfWeek: DayOfWeek.MONDAY, startTime: '10:00', endTime: '19:00'},
-            {dayOfWeek: DayOfWeek.WEDNESDAY, startTime: '10:00', endTime: '19:00'},
-            {dayOfWeek: DayOfWeek.FRIDAY, startTime: '10:00', endTime: '19:00'},
-            {dayOfWeek: DayOfWeek.SATURDAY, startTime: '11:00', endTime: '17:00'},
+            {daysOfWeek: [1, 3, 5], startTime: '10:00', endTime: '19:00'},
+            {daysOfWeek: [6], startTime: '11:00', endTime: '17:00'},
         ],
     },
     {
@@ -143,11 +130,7 @@ const mastersData = [
             {name: 'Спортивный массаж', duration: 60, price: 4000},
         ],
         schedule: [
-            {dayOfWeek: DayOfWeek.MONDAY, startTime: '09:00', endTime: '21:00'},
-            {dayOfWeek: DayOfWeek.TUESDAY, startTime: '09:00', endTime: '21:00'},
-            {dayOfWeek: DayOfWeek.WEDNESDAY, startTime: '09:00', endTime: '21:00'},
-            {dayOfWeek: DayOfWeek.THURSDAY, startTime: '09:00', endTime: '21:00'},
-            {dayOfWeek: DayOfWeek.FRIDAY, startTime: '09:00', endTime: '21:00'},
+            {daysOfWeek: [1, 2, 3, 4, 5], startTime: '09:00', endTime: '21:00'},
         ],
     },
     {
@@ -171,10 +154,9 @@ const mastersData = [
             {name: 'Массаж лица', duration: 45, price: 2500},
         ],
         schedule: [
-            {dayOfWeek: DayOfWeek.TUESDAY, startTime: '10:00', endTime: '19:00'},
-            {dayOfWeek: DayOfWeek.THURSDAY, startTime: '10:00', endTime: '19:00'},
-            {dayOfWeek: DayOfWeek.SATURDAY, startTime: '10:00', endTime: '18:00'},
-            {dayOfWeek: DayOfWeek.SUNDAY, startTime: '11:00', endTime: '17:00'},
+            {daysOfWeek: [2, 4], startTime: '10:00', endTime: '19:00'},
+            {daysOfWeek: [6], startTime: '10:00', endTime: '18:00'},
+            {daysOfWeek: [0], startTime: '11:00', endTime: '17:00'},
         ],
     },
     {
@@ -198,9 +180,7 @@ const mastersData = [
             {name: 'Консультация онлайн', duration: 30, price: 500},
         ],
         schedule: [
-            {dayOfWeek: DayOfWeek.MONDAY, startTime: '14:00', endTime: '20:00'},
-            {dayOfWeek: DayOfWeek.WEDNESDAY, startTime: '14:00', endTime: '20:00'},
-            {dayOfWeek: DayOfWeek.FRIDAY, startTime: '14:00', endTime: '20:00'},
+            {daysOfWeek: [1, 3, 5], startTime: '14:00', endTime: '20:00'},
         ],
     },
 ];
@@ -297,17 +277,24 @@ async function main() {
             });
         }
 
-        // Create schedule
-        for (const schedule of masterData.schedule) {
-            await prisma.schedule.create({
-                data: {
-                    masterId: master.id,
-                    dayOfWeek: schedule.dayOfWeek,
-                    startTime: schedule.startTime,
-                    endTime: schedule.endTime,
-                    isActive: true,
-                },
-            });
+        // Create schedule - generate dates for next 30 days based on daysOfWeek
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        for (const scheduleRule of masterData.schedule) {
+            for (let i = 0; i < 30; i++) {
+                const d = new Date(today);
+                d.setDate(today.getDate() + i);
+                if (scheduleRule.daysOfWeek.includes(d.getDay())) {
+                    await prisma.schedule.create({
+                        data: {
+                            masterId: master.id,
+                            date: d,
+                            startTime: scheduleRule.startTime,
+                            endTime: scheduleRule.endTime,
+                        },
+                    });
+                }
+            }
         }
     }
 

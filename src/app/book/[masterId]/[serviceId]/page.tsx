@@ -103,8 +103,11 @@ export default function BookPage() {
                         services={master.services || []}
                         availableSlots={availableSlots || []}
                         onDateSelect={(date) => {
-                            const dateStr = date.toISOString().split('T')[0];
-                            setSelectedDate(dateStr);
+                            // Use local date parts to avoid UTC timezone shift
+                            const y = date.getFullYear();
+                            const m = String(date.getMonth() + 1).padStart(2, '0');
+                            const d = String(date.getDate()).padStart(2, '0');
+                            setSelectedDate(`${y}-${m}-${d}`);
                         }}
                         onSubmit={async (data) => {
                             console.log('[BookPage] Creating appointment:', data);

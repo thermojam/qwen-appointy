@@ -35,10 +35,11 @@ export const masterSettingsService = {
         schedule: {
           select: {
             id: true,
-            dayOfWeek: true,
+            date: true,
             startTime: true,
             endTime: true,
-            isActive: true,
+            breakStart: true,
+            breakEnd: true,
           },
         },
       },

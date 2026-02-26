@@ -164,8 +164,7 @@ export const searchService = {
           orderBy: { name: 'asc' },
         },
         schedule: {
-          where: { isActive: true },
-          orderBy: { dayOfWeek: 'asc' },
+          orderBy: { date: 'asc' },
         },
         portfolio: {
           orderBy: { createdAt: 'desc' },

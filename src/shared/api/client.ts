@@ -14,7 +14,6 @@ import type {
     AppointmentStatus,
     Schedule,
     CreateScheduleInput,
-    DayOfWeek,
     WorkFormat,
     Notification,
     NotificationType,
@@ -185,11 +184,20 @@ async function request<T>(
 
     // Если получили 401 и токен ещё не обновляем - пробуем refresh
     if (response.status === 401 && !isRefreshing) {
+        // Если refresh токена нет вообще — сессия мертва, редиректим на логин
+        if (!getRefreshToken()) {
+            useAuthStore.getState().clearTokens();
+            if (typeof window !== 'undefined') {
+                window.location.href = '/sign-in';
+            }
+            throw new ApiError(401, 'SESSION_EXPIRED', 'Session expired, please sign in again');
+        }
+
         isRefreshing = true;
-        
+
         try {
             const newToken = await refreshAuthToken();
-            
+
             // Повторяем оригинальный запрос с новым токеном
             const retryResponse = await fetch(url, {
                 ...options,
@@ -198,11 +206,16 @@ async function request<T>(
                     Authorization: `Bearer ${newToken}`,
                 },
             });
-            
+
             processQueue();
             return handleResponse<T>(retryResponse);
         } catch (refreshError) {
             processQueue(refreshError as Error);
+            // Если refresh провалился — сессия мертва
+            useAuthStore.getState().clearTokens();
+            if (typeof window !== 'undefined') {
+                window.location.href = '/sign-in';
+            }
             throw refreshError;
         } finally {
             isRefreshing = false;
@@ -375,10 +388,8 @@ export const api = {
 
     // Schedule
     schedule: {
-        getAll: (dayOfWeek?: DayOfWeek) => {
-            const queryString = dayOfWeek ? `?dayOfWeek=${dayOfWeek}` : '';
-            return request<Schedule[]>(`/schedule${queryString}`);
-        },
+        getAll: () =>
+            request<Schedule[]>('/schedule'),
         getById: (id: string) =>
             request<Schedule>(`/schedule/${id}`),
         create: (data: CreateScheduleInput) =>
@@ -394,10 +405,6 @@ export const api = {
         delete: (id: string) =>
             request<{ message: string }>(`/schedule/${id}`, {
                 method: 'DELETE',
-            }),
-        toggle: (id: string) =>
-            request<Schedule>(`/schedule/${id}/toggle`, {
-                method: 'POST',
             }),
         getAvailableSlots: (masterId: string, date: string, serviceDuration: number) =>
             request<string[]>(`/schedule/${masterId}/available-slots?date=${date}&serviceDuration=${serviceDuration}`),

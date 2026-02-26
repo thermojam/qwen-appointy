@@ -8,15 +8,10 @@ interface MasterStep6Props {
   onBack: () => void;
 }
 
-const dayLabels: Record<string, string> = {
-  MONDAY: 'Пн',
-  TUESDAY: 'Вт',
-  WEDNESDAY: 'Ср',
-  THURSDAY: 'Чт',
-  FRIDAY: 'Пт',
-  SATURDAY: 'Сб',
-  SUNDAY: 'Вс',
-};
+function formatScheduleDate(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' });
+}
 
 export function MasterStep6({ onSubmit, onBack }: MasterStep6Props) {
   const { master, updateMasterData } = useOnboardingStore();
@@ -26,7 +21,7 @@ export function MasterStep6({ onSubmit, onBack }: MasterStep6Props) {
     onSubmit();
   };
 
-  const activeSchedule = master.schedule.filter((day) => day.isActive);
+  const activeSchedule = master.schedule;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -139,14 +134,14 @@ export function MasterStep6({ onSubmit, onBack }: MasterStep6Props) {
         <div className="flex flex-wrap gap-2">
           {activeSchedule.map((day) => (
             <span
-              key={day.dayOfWeek}
+              key={day.date}
               className="px-3 py-1 bg-secondary rounded-full text-sm"
             >
-              {dayLabels[day.dayOfWeek]}: {day.startTime}–{day.endTime}
+              {formatScheduleDate(day.date)}: {day.startTime}–{day.endTime}
             </span>
           ))}
           {activeSchedule.length === 0 && (
-            <span className="text-muted-foreground text-sm">Нет активных дней</span>
+            <span className="text-muted-foreground text-sm">Нет запланированных дней</span>
           )}
         </div>
       </div>

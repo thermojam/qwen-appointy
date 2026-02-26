@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { WorkFormat, DayOfWeek, OfflineMode } from '@prisma/client';
+import { WorkFormat, OfflineMode } from '@prisma/client';
 
 // Шаг 1: Базовая информация
 export const masterStep1Schema = z.object({
@@ -50,18 +50,11 @@ export const masterStep4Schema = z.object({
 
 // Шаг 5: График работы
 export const scheduleDaySchema = z.object({
-  dayOfWeek: z.nativeEnum(DayOfWeek),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Некорректная дата (YYYY-MM-DD)'),
   startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Некорректное время'),
   endTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Некорректное время'),
   breakStart: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Некорректное время').optional().or(z.literal('')),
   breakEnd: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Некорректное время').optional().or(z.literal('')),
-  isActive: z.boolean(),
-}).refine((data) => {
-  if (!data.isActive) return true;
-  return data.startTime < data.endTime;
-}, {
-  message: 'Время начала должно быть раньше времени окончания',
-  path: ['startTime'],
 });
 
 export const masterStep5Schema = z.object({

@@ -51,7 +51,7 @@ export function OnboardingWizard() {
   // Master mutation
   const completeMaster = useMutation({
     mutationFn: async () => {
-      return api.onboarding.completeMaster({
+      await api.onboarding.completeMaster({
         fullName: master.fullName,
         avatarUrl: master.avatarUrl || undefined,
         description: master.description || undefined,
@@ -62,6 +62,17 @@ export function OnboardingWizard() {
         minCancellationTime: master.minCancellationTime,
         maxBookingLeadTime: master.maxBookingLeadTime,
       });
+
+      // Save schedule days sequentially after master profile is created
+      for (const day of master.schedule) {
+        await api.schedule.create({
+          date: day.date,
+          startTime: day.startTime,
+          endTime: day.endTime,
+          breakStart: day.breakStart || undefined,
+          breakEnd: day.breakEnd || undefined,
+        });
+      }
     },
     onSuccess: () => {
       resetOnboarding();

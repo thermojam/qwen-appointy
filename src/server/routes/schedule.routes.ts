@@ -16,7 +16,7 @@ router.use(authenticate);
 const updateScheduleSchema = createScheduleSchema.partial();
 
 const getScheduleQuerySchema = z.object({
-  dayOfWeek: z.enum(['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']).optional(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
 
 // ====================================================
@@ -39,11 +39,15 @@ router.get(
     const query = getScheduleQuerySchema.safeParse(req.query);
     let schedules;
 
-    if (query.success && query.data.dayOfWeek) {
+    if (query.success && query.data.date) {
+      const startOfDay = new Date(query.data.date);
+      startOfDay.setUTCHours(0, 0, 0, 0);
+      const endOfDay = new Date(query.data.date);
+      endOfDay.setUTCHours(23, 59, 59, 999);
       schedules = await prisma.schedule.findMany({
         where: {
           masterId: master.id,
-          dayOfWeek: query.data.dayOfWeek,
+          date: { gte: startOfDay, lte: endOfDay },
         },
       });
     } else {
@@ -91,6 +95,7 @@ router.post(
 
     const schedule = await scheduleService.createSchedule({
       ...data,
+      date: new Date(data.date + 'T00:00:00.000Z'),
       masterId: master.id,
     });
 
@@ -116,7 +121,8 @@ router.patch(
       throw AppError.forbidden('Access denied');
     }
 
-    const updated = await scheduleService.updateSchedule(schedule.id, data);
+    const { date: _date, ...restData } = data;
+    const updated = await scheduleService.updateSchedule(schedule.id, restData);
     successResponse(res, updated);
   })
 );
@@ -139,27 +145,6 @@ router.delete(
 
     await scheduleService.deleteSchedule(schedule.id);
     successResponse(res, { message: 'Schedule deleted successfully' });
-  })
-);
-
-// Toggle schedule active/inactive
-router.post(
-  '/:id/toggle',
-  authorize(UserRole.MASTER),
-  asyncHandler(async (req, res) => {
-    const schedule = await scheduleService.getScheduleById(String(req.params.id));
-
-    // Verify ownership
-    const master = await prisma.master.findUnique({
-      where: { userId: req.user!.userId },
-    });
-
-    if (!master || schedule.masterId !== master.id) {
-      throw AppError.forbidden('Access denied');
-    }
-
-    const updated = await scheduleService.toggleSchedule(schedule.id);
-    successResponse(res, updated);
   })
 );
 
